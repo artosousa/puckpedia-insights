@@ -1,0 +1,111 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type League = { id: string; name: string; abbreviation: string | null };
+export type Team = { id: string; name: string; league_id: string | null };
+export type Player = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  position: string | null;
+  shoots: string | null;
+  date_of_birth: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  jersey_number: number | null;
+  team_id: string | null;
+  created_at: string;
+};
+export type Viewing = {
+  id: string;
+  player_id: string;
+  game_date: string;
+  opponent: string | null;
+  location: string | null;
+  notes: string | null;
+  rating_skating: number | null;
+  rating_shot: number | null;
+  rating_hands: number | null;
+  rating_iq: number | null;
+  rating_compete: number | null;
+  rating_physicality: number | null;
+  rating_overall: number | null;
+  projection: string | null;
+  created_at: string;
+};
+
+export const useScoutingData = () => {
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [viewings, setViewings] = useState<Viewing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const [l, t, p, v] = await Promise.all([
+      supabase.from("leagues").select("*").order("name"),
+      supabase.from("teams").select("*").order("name"),
+      supabase.from("players").select("*").order("last_name"),
+      supabase.from("viewings").select("*").order("game_date", { ascending: false }),
+    ]);
+    if (l.data) setLeagues(l.data);
+    if (t.data) setTeams(t.data);
+    if (p.data) setPlayers(p.data);
+    if (v.data) setViewings(v.data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const createLeague = async (name: string): Promise<string> => {
+    const { data, error } = await supabase
+      .from("leagues")
+      .insert({ name })
+      .select()
+      .single();
+    if (error) throw error;
+    setLeagues((prev) => [...prev, data]);
+    return data.id;
+  };
+
+  const createTeam = async (name: string, league_id: string | null): Promise<string> => {
+    const { data, error } = await supabase
+      .from("teams")
+      .insert({ name, league_id })
+      .select()
+      .single();
+    if (error) throw error;
+    setTeams((prev) => [...prev, data]);
+    return data.id;
+  };
+
+  const createPlayer = async (input: Omit<Player, "id" | "created_at">) => {
+    const { data, error } = await supabase
+      .from("players")
+      .insert(input)
+      .select()
+      .single();
+    if (error) throw error;
+    setPlayers((prev) => [data, ...prev]);
+    return data;
+  };
+
+  const createViewing = async (input: Omit<Viewing, "id" | "created_at">) => {
+    const { data, error } = await supabase
+      .from("viewings")
+      .insert(input)
+      .select()
+      .single();
+    if (error) throw error;
+    setViewings((prev) => [data, ...prev]);
+    return data;
+  };
+
+  return {
+    leagues, teams, players, viewings, loading,
+    refresh, createLeague, createTeam, createPlayer, createViewing,
+  };
+};
