@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leagues: {
+        Row: {
+          abbreviation: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      players: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          first_name: string
+          height_cm: number | null
+          id: string
+          jersey_number: number | null
+          last_name: string
+          position: string | null
+          shoots: string | null
+          team_id: string | null
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          first_name: string
+          height_cm?: number | null
+          id?: string
+          jersey_number?: number | null
+          last_name: string
+          position?: string | null
+          shoots?: string | null
+          team_id?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          first_name?: string
+          height_cm?: number | null
+          id?: string
+          jersey_number?: number | null
+          last_name?: string
+          position?: string | null
+          shoots?: string | null
+          team_id?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          league_id: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          league_id?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          league_id?: string | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viewings: {
+        Row: {
+          created_at: string
+          game_date: string
+          id: string
+          location: string | null
+          notes: string | null
+          opponent: string | null
+          player_id: string
+          projection: string | null
+          rating_compete: number | null
+          rating_hands: number | null
+          rating_iq: number | null
+          rating_overall: number | null
+          rating_physicality: number | null
+          rating_shot: number | null
+          rating_skating: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          game_date?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          opponent?: string | null
+          player_id: string
+          projection?: string | null
+          rating_compete?: number | null
+          rating_hands?: number | null
+          rating_iq?: number | null
+          rating_overall?: number | null
+          rating_physicality?: number | null
+          rating_shot?: number | null
+          rating_skating?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          game_date?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          opponent?: string | null
+          player_id?: string
+          projection?: string | null
+          rating_compete?: number | null
+          rating_hands?: number | null
+          rating_iq?: number | null
+          rating_overall?: number | null
+          rating_physicality?: number | null
+          rating_shot?: number | null
+          rating_skating?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watch_list: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          player_id: string
+          tier: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          tier?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          tier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watch_list_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
