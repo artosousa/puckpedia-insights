@@ -56,6 +56,8 @@ export const AddPlayerDialog = ({ open, onOpenChange }: Props) => {
         weight_kg: weight ? parseInt(weight) : null,
         jersey_number: jersey ? parseInt(jersey) : null,
         team_id: teamId,
+        player_context: null,
+        scout_confidence: null,
       });
       toast.success(`${firstName} ${lastName} added`);
       reset();
