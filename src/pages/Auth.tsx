@@ -54,7 +54,16 @@ const Auth = () => {
       }
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
-      toast.error(err?.message ?? "Something went wrong");
+      const msg = String(err?.message ?? "");
+      if (/email not confirmed/i.test(msg)) {
+        toast.error("Please confirm your email first — check your inbox for the verification link.");
+      } else if (/invalid login credentials/i.test(msg)) {
+        toast.error("Email or password is incorrect.");
+      } else if (/already registered/i.test(msg) || /user already/i.test(msg)) {
+        toast.error("That email is already registered. Try logging in instead.");
+      } else {
+        toast.error(msg || "Something went wrong");
+      }
     } finally {
       setBusy(false);
     }

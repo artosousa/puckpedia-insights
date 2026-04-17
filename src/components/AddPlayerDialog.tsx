@@ -61,7 +61,12 @@ export const AddPlayerDialog = ({ open, onOpenChange }: Props) => {
       reset();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to add player");
+      const raw = String(e?.message ?? "");
+      if (/player_limit_reached/i.test(raw)) {
+        toast.error("You've reached your plan's player limit. Upgrade to add more.");
+      } else {
+        toast.error(raw || "Failed to add player");
+      }
     } finally {
       setSaving(false);
     }

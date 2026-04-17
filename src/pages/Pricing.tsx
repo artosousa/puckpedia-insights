@@ -14,42 +14,41 @@ import { toast } from "sonner";
 const Pricing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { tierId, hasStripeSubscription, loading } = useSubscription();
+  const { tierId, hasStripeSubscription, loading, cancelAtPeriodEnd, currentPeriodEnd } = useSubscription();
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [checkoutPrice, setCheckoutPrice] = useState<{ priceId: string; tierName: string } | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
+  const openPortal = async (msg?: string) => {
+    try {
+      setPortalLoading(true);
+      const url = await openBillingPortal(`${window.location.origin}/pricing`);
+      window.open(url, "_blank");
+      if (msg) toast.info(msg);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to open billing portal");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
   const handleSelect = async (tier: Tier) => {
     if (!user) { navigate("/auth"); return; }
-    if (tier.id === "peewee") {
-      toast.success("PeeWee is your default plan.");
-      return;
-    }
+    // Already on this tier — manage in portal (or nothing for free)
     if (tierId === tier.id) {
-      // Already on this tier — open portal
-      try {
-        setPortalLoading(true);
-        const url = await openBillingPortal(`${window.location.origin}/pricing`);
-        window.open(url, "_blank");
-      } catch (e: any) {
-        toast.error(e.message ?? "Failed to open billing portal");
-      } finally {
-        setPortalLoading(false);
-      }
+      if (tier.id === "peewee") return;
+      await openPortal();
       return;
     }
+    // Downgrading to free PeeWee — must cancel via portal (no $0 Stripe price)
+    if (tier.id === "peewee") {
+      if (!hasStripeSubscription) return;
+      await openPortal("Cancel your current plan in the portal — you'll keep access until your renewal date, then drop to PeeWee.");
+      return;
+    }
+    // Existing subscriber switching paid tiers — use portal
     if (hasStripeSubscription) {
-      // Existing subscriber switching tiers — use portal
-      try {
-        setPortalLoading(true);
-        const url = await openBillingPortal(`${window.location.origin}/pricing`);
-        window.open(url, "_blank");
-        toast.info("Manage your plan change in the billing portal.");
-      } catch (e: any) {
-        toast.error(e.message ?? "Failed to open billing portal");
-      } finally {
-        setPortalLoading(false);
-      }
+      await openPortal("Switch your plan inside the billing portal.");
       return;
     }
     const price = billing === "monthly" ? tier.monthly : tier.yearly;
@@ -181,8 +180,15 @@ const Pricing = () => {
                   {portalLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {isCurrent
                     ? tier.id === "peewee" ? "Current plan" : "Manage plan"
-                    : tier.id === "peewee" ? "Free forever" : `Choose ${tier.name}`}
+                    : tier.id === "peewee" ? (hasStripeSubscription ? "Cancel paid plan" : "Free forever") : `Choose ${tier.name}`}
                 </Button>
+                {isCurrent && currentPeriodEnd && tier.id !== "peewee" && (
+                  <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                    {cancelAtPeriodEnd
+                      ? `Cancels on ${new Date(currentPeriodEnd).toLocaleDateString()}`
+                      : `Renews on ${new Date(currentPeriodEnd).toLocaleDateString()}`}
+                  </p>
+                )}
               </motion.div>
             );
           })}

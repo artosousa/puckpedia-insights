@@ -300,7 +300,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_tier_id: { Args: { uid: string }; Returns: string }
+      tier_player_limit: { Args: { tier: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never

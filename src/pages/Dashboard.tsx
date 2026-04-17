@@ -160,6 +160,12 @@ const Dashboard = () => {
                 <Sparkles className="w-4 h-4" />
                 {tier.name} plan
               </Link>
+              <Link
+                to="/account"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                Account
+              </Link>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

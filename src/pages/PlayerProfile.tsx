@@ -14,6 +14,7 @@ import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
 import { supabase } from "@/integrations/supabase/client";
+import { stripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -98,6 +99,7 @@ const PlayerProfile = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-scouting-report", {
         body: {
+          environment: stripeEnvironment,
           player_id: player.id,
           player: {
             first_name: player.first_name,
