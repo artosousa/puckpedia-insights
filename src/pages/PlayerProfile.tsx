@@ -36,7 +36,7 @@ const avg = (nums: (number | null)[]) => {
 const PlayerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { players, teams, leagues, viewings, loading } = useScoutingData();
+  const { players, teams, leagues, viewings, loading, updatePlayer } = useScoutingData();
   const { tier, canGenerateReport, aiReportsRemaining, aiReportsThisMonth } = useSubscription();
   const [viewingOpen, setViewingOpen] = useState(false);
   const [report, setReport] = useState<string>("");
