@@ -475,9 +475,17 @@ function MediaViewerDialog({
             )}
             {media?.ai_analysis ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-1.5 text-primary">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-sm font-semibold">AI analysis</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-primary">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm font-semibold">AI analysis</span>
+                  </div>
+                  {canAiAnalyze && (
+                    <Button size="sm" variant="outline" onClick={onAnalyze} disabled={analyzing}>
+                      {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      Re-analyze
+                    </Button>
+                  )}
                 </div>
                 {ratings && <RatingsBlock ratings={ratings} />}
                 {sections.length > 0 ? (
