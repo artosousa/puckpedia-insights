@@ -167,6 +167,7 @@ const PlayerProfile = () => {
                     avg_compete: +avg(playerViewings.map((v) => v.rating_compete)).toFixed(1) || "",
                     avg_physicality: +avg(playerViewings.map((v) => v.rating_physicality)).toFixed(1) || "",
                     created_at: player.created_at,
+                    ai_scouting_report: report || "",
                   }],
                 },
                 {
