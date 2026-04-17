@@ -446,7 +446,7 @@ function MediaViewerDialog({
   }, [media?.storage_path]);
 
   const { ratings, text: analysisText } = parseRatings(media?.ai_analysis ?? "");
-  const sections = parseAnalysis(analysisText);
+  const sections = parseAnalysisSections(analysisText);
 
   return (
     <Dialog open={!!media} onOpenChange={(o) => !o && onClose()}>
