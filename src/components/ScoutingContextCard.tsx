@@ -40,6 +40,7 @@ export function ScoutingContextCard({ player, league }: Props) {
   const { updatePlayer, updateLeague } = useScoutingData();
   const [level, setLevel] = useState(league?.level ?? "");
   const [context, setContext] = useState(player.player_context ?? "");
+  const [confidence, setConfidence] = useState<string>(player.scout_confidence ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -48,11 +49,13 @@ export function ScoutingContextCard({ player, league }: Props) {
 
   useEffect(() => {
     setContext(player.player_context ?? "");
-  }, [player.id, player.player_context]);
+    setConfidence(player.scout_confidence ?? "");
+  }, [player.id, player.player_context, player.scout_confidence]);
 
   const dirty =
     (league ? (level || null) !== (league.level || null) : false) ||
-    (context || null) !== (player.player_context || null);
+    (context || null) !== (player.player_context || null) ||
+    (confidence || null) !== (player.scout_confidence || null);
 
   const save = async () => {
     setSaving(true);
@@ -61,17 +64,30 @@ export function ScoutingContextCard({ player, league }: Props) {
       if (league && (level || null) !== (league.level || null)) {
         tasks.push(updateLeague(league.id, { level: level.trim() || null }));
       }
+      const playerPatch: Partial<Player> = {};
       if ((context || null) !== (player.player_context || null)) {
-        tasks.push(updatePlayer(player.id, { player_context: context.trim() || null }));
+        playerPatch.player_context = context.trim() || null;
+      }
+      if ((confidence || null) !== (player.scout_confidence || null)) {
+        playerPatch.scout_confidence = confidence || null;
+      }
+      if (Object.keys(playerPatch).length > 0) {
+        tasks.push(updatePlayer(player.id, playerPatch));
       }
       await Promise.all(tasks);
-      toast.success("Scouting context saved — AI will calibrate to this level");
+      toast.success("Scouting context saved");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save context");
     } finally {
       setSaving(false);
     }
   };
+
+  const confidenceOptions: { value: string; label: string; hint: string }[] = [
+    { value: "low", label: "Low", hint: "Limited viewings, unsure of trajectory" },
+    { value: "medium", label: "Medium", hint: "Reasonable read, want more looks" },
+    { value: "high", label: "High", hint: "Confident in this evaluation" },
+  ];
 
   return (
     <section className="glass-card rounded-xl p-6 mb-8">
@@ -124,6 +140,34 @@ export function ScoutingContextCard({ player, league }: Props) {
             onChange={(e) => setContext(e.target.value)}
             placeholder="e.g. 38 yrs old, started playing at 31 (lost 2 yrs to pandemic), forward, plays once a week."
           />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <Label className="text-xs">
+            Scout Confidence
+            <span className="text-muted-foreground"> · how sure are you in your read on this player?</span>
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {confidenceOptions.map((opt) => {
+              const active = confidence === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setConfidence(active ? "" : opt.value)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition text-left ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                  }`}
+                  title={opt.hint}
+                >
+                  <span className="font-semibold">{opt.label}</span>
+                  <span className={`ml-1.5 text-[10px] ${active ? "opacity-90" : "opacity-60"}`}>{opt.hint}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
