@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardCheck, Plus, Search, Users, Star, TrendingUp,
-  Calendar, LogOut, ClipboardList, LayoutDashboard, Sparkles, Lock,
+  Calendar, LogOut, ClipboardList, LayoutDashboard, Sparkles, Lock, Menu,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
