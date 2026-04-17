@@ -42,6 +42,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [editing, setEditing] = useState<PlayerMedia | null>(null);
   /** IDs of items just uploaded that still need tags. */
   const [pendingTagIds, setPendingTagIds] = useState<string[]>([]);
+  const [dragActive, setDragActive] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -204,24 +205,64 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       </div>
 
       {accept && (
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          className="w-full mb-5 p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/60 bg-surface-sunken transition flex flex-col items-center justify-center gap-2 disabled:opacity-60"
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => !uploading && fileRef.current?.click()}
+          onKeyDown={(e) => {
+            if ((e.key === "Enter" || e.key === " ") && !uploading) {
+              e.preventDefault();
+              fileRef.current?.click();
+            }
+          }}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!uploading) setDragActive(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!uploading && !dragActive) setDragActive(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Only deactivate when leaving the dropzone itself, not its children
+            if (e.currentTarget === e.target) setDragActive(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(false);
+            if (uploading) return;
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              onFiles(e.dataTransfer.files);
+            }
+          }}
+          aria-disabled={uploading}
+          className={`w-full mb-5 p-6 rounded-lg border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            dragActive
+              ? "border-primary bg-primary/10 scale-[1.01] shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
+              : "border-border hover:border-primary/60 bg-surface-sunken"
+          } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
         >
           {uploading ? (
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           ) : (
-            <Upload className="w-5 h-5 text-primary" />
+            <Upload className={`w-5 h-5 text-primary transition-transform ${dragActive ? "scale-125" : ""}`} />
           )}
           <span className="text-sm font-medium text-foreground">
-            {uploading ? "Uploading…" : "Upload photos or videos"}
+            {uploading
+              ? "Uploading…"
+              : dragActive
+              ? "Drop to upload"
+              : "Upload photos or videos"}
           </span>
           <span className="text-xs text-muted-foreground">
-            You'll add tags &amp; context after upload
+            {dragActive ? "Release to add files" : "Drag & drop or click to browse · tags added after upload"}
           </span>
-        </button>
+        </div>
       )}
 
       {!caps.canUploadVideos && (
