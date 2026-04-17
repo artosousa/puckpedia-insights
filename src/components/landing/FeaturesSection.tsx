@@ -6,37 +6,37 @@ const features = [
     icon: ClipboardList,
     title: "Quick Evaluations",
     description: "Log skating, shooting, hockey IQ, compete level and more in seconds from the stands.",
-    span: "col-span-1",
+    span: "col-span-1 md:col-span-2",
   },
   {
     icon: BarChart3,
     title: "Development Tracking",
     description: "Watch prospects evolve over time with visual progression charts and comparison tools.",
-    span: "col-span-1 md:col-span-2",
+    span: "col-span-1 md:col-span-4",
   },
   {
     icon: Users,
     title: "Player Database",
     description: "Build your personal prospect database across leagues — CHL, USHL, NCAA, European leagues.",
-    span: "col-span-1 md:col-span-2",
+    span: "col-span-1 md:col-span-4",
   },
   {
     icon: Share2,
     title: "Share Reports",
     description: "Generate and share professional scouting reports with your staff or organization.",
-    span: "col-span-1",
+    span: "col-span-1 md:col-span-2",
   },
   {
     icon: Smartphone,
     title: "Rinkside Ready",
     description: "Mobile-first design built for use at the rink. Works offline and syncs when you're back.",
-    span: "col-span-1",
+    span: "col-span-1 md:col-span-3",
   },
   {
     icon: Star,
     title: "Prospect Rankings",
     description: "Create tiered watch lists and draft boards with your own custom ranking system.",
-    span: "col-span-1",
+    span: "col-span-1 md:col-span-3",
   },
 ];
 
@@ -76,7 +76,7 @@ const FeaturesSection = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-6 gap-4 max-w-5xl mx-auto"
         >
           {features.map((feature) => (
             <motion.div
