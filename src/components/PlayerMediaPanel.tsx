@@ -567,11 +567,6 @@ function RatingsBlock({ ratings }: { ratings: AiRatings }) {
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-foreground">AI ratings (1–10)</p>
-        {ratings.confidence && (
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Confidence: <span className="text-primary">{ratings.confidence}</span>
-          </span>
-        )}
       </div>
       <div className="grid grid-cols-1 gap-1.5">
         {rows.map(({ key, label }) => {
