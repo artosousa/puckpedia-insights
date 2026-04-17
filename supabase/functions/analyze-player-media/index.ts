@@ -13,7 +13,16 @@ Look at the photo or video frames and provide a concise scouting analysis focuse
 - Any tactical observations visible (positioning, awareness, angle of attack)
 
 Be specific about what you actually see. If the image quality or angle limits what you can assess, say so.
-Output 4–8 short bullet points. No preamble, no headings — just the bullets.`;
+
+Format your response in EXACTLY two sections using these headings on their own lines:
+
+Observations
+- 3–6 short bullets describing what you see (strengths and neutral observations).
+
+Areas to Improve
+- 3–5 short, actionable bullets identifying specific weaknesses or things the player should work on, based on what is visible. If the media is too limited to assess a weakness, say "Limited visibility — cannot assess" as one of the bullets.
+
+No preamble. Use only the two headings above. Bullets start with "- ".`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
