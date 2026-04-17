@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VIDEO_MAX_BYTES_FOR_INLINE = 25 * 1024 * 1024; // 25 MB hard guard for fallback path
+const IMAGE_MAX_BYTES_FOR_INLINE = 25 * 1024 * 1024;
 
 function buildSystemPrompt(level: string | null, playerContext: string | null) {
   const levelLine = level
@@ -77,9 +77,15 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { media_id } = await req.json();
+    const { media_id, frame_data_url, analysis_source } = await req.json();
     if (!media_id || typeof media_id !== "string") {
       return jsonResponse({ error: "media_id required" }, 400);
+    }
+    if (frame_data_url && typeof frame_data_url !== "string") {
+      return jsonResponse({ error: "frame_data_url must be a string" }, 400);
+    }
+    if (analysis_source && typeof analysis_source !== "string") {
+      return jsonResponse({ error: "analysis_source must be a string" }, 400);
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -130,25 +136,23 @@ Deno.serve(async (req) => {
 
     // Build the image_url payload:
     // - Photos: small enough → base64 inline (works reliably)
-    // - Videos: use a signed URL so Gemini fetches it directly (keeps worker memory flat)
+    // - Videos: analyze a client-captured JPEG frame instead of the raw clip URL
     let imageUrlValue: string;
     if (isVideo) {
-      const { data: signed, error: signErr } = await admin.storage
-        .from("player-media")
-        .createSignedUrl(media.storage_path, 60 * 10); // 10 min
-      if (signErr || !signed?.signedUrl) {
-        return jsonResponse({ error: "Could not create signed URL for video" }, 500);
-      }
-      // Size guard: if very large and provider can't fetch, this still keeps worker safe
       if (media.size_bytes && media.size_bytes > 100 * 1024 * 1024) {
         return jsonResponse({
           error: "Video too large for AI — trim it shorter or analyze a still frame.",
         }, 413);
       }
-      imageUrlValue = signed.signedUrl;
+      if (!frame_data_url || !frame_data_url.startsWith("data:image/")) {
+        return jsonResponse({
+          error: "Video analysis needs a captured frame. Reopen the clip, set the crop if needed, and try again.",
+        }, 400);
+      }
+      imageUrlValue = frame_data_url;
     } else {
       // Photo: inline base64
-      if (media.size_bytes && media.size_bytes > VIDEO_MAX_BYTES_FOR_INLINE) {
+      if (media.size_bytes && media.size_bytes > IMAGE_MAX_BYTES_FOR_INLINE) {
         return jsonResponse({
           error: "Photo too large for AI — please use an image under 25 MB.",
         }, 413);
@@ -171,9 +175,13 @@ Deno.serve(async (req) => {
       playerContext ? `Player background: ${playerContext}` : null,
     ].filter(Boolean).join(" | ");
 
+    const mediaDescriptor = isVideo
+      ? `video frame${analysis_source ? ` (${analysis_source})` : ""}`
+      : media.kind;
+
     const userText = `${contextHeader ? contextHeader + "\n" : ""}Tags: ${(media.tags ?? []).join(", ") || "none"}.${
       media.notes ? ` Notes: ${media.notes}` : ""
-    } Analyze this ${media.kind}. Return BOTH the written analysis and structured ratings via the analyze_clip tool.`;
+    } Analyze this ${mediaDescriptor}. Return BOTH the written analysis and structured ratings via the analyze_clip tool.`;
 
     const analyzeTool = {
       type: "function",
