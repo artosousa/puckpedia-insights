@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
             {
               role: "system",
               content:
-                "You are a hockey scout. Rate the player on Skating, Shot, Hands, IQ, Compete, and Physicality on a 1-10 scale (10 = NHL-ready) based ONLY on what is visible in the media. Use null for any metric you cannot assess from this clip. Be honest and conservative — short clips rarely justify high confidence.",
+                `You are a hockey scout. Rate the player on Skating, Shot, Hands, IQ, Compete, and Physicality on a 1-10 scale based ONLY on what is visible in the media. ${level ? `IMPORTANT: Calibrate ratings RELATIVE TO PEERS at this level: "${level}". A "10" = elite for this level (not NHL-relative). A "5" = average for this level.` : "Without a known level, use a generic scale where 10 = NHL-ready and 5 = average junior — and lean conservative."} ${playerContext ? `Player background: ${playerContext}.` : ""} Use null for any metric you cannot assess from this clip. Be honest — short clips rarely justify high confidence.`,
             },
             {
               role: "user",
