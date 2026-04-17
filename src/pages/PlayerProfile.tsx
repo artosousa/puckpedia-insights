@@ -132,8 +132,9 @@ const PlayerProfile = () => {
         },
       });
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setReport((data as any)?.report ?? "");
+      const payload = data as any;
+      if (payload?.ok === false || payload?.error) throw new Error(payload?.error ?? "Report generation failed");
+      setReport(payload?.report ?? "");
       toast.success("Scouting report generated.");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not generate report.");
