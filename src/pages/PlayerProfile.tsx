@@ -7,12 +7,15 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  ArrowLeft, ClipboardCheck, Plus, Target, Activity, BarChart3, Calendar,
+  ArrowLeft, ClipboardCheck, Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -26,6 +29,8 @@ const PlayerProfile = () => {
   const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [viewingOpen, setViewingOpen] = useState(false);
+  const [report, setReport] = useState<string>("");
+  const [reportLoading, setReportLoading] = useState(false);
 
   const player = useMemo(() => players.find((p) => p.id === id) ?? null, [players, id]);
   const team = player?.team_id ? teams.find((t) => t.id === player.team_id) : null;
@@ -75,6 +80,55 @@ const PlayerProfile = () => {
 
   const overallAvg = +avg(playerViewings.map((v) => v.rating_overall)).toFixed(1);
 
+  const generateReport = async () => {
+    if (!player) return;
+    if (playerViewings.length === 0) {
+      toast.error("Log at least one viewing before generating a report.");
+      return;
+    }
+    setReportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-scouting-report", {
+        body: {
+          player: {
+            first_name: player.first_name,
+            last_name: player.last_name,
+            position: player.position,
+            shoots: player.shoots,
+            jersey_number: player.jersey_number,
+            date_of_birth: player.date_of_birth,
+            height_cm: player.height_cm,
+            weight_kg: player.weight_kg,
+          },
+          team: team?.name ?? null,
+          league: league?.name ?? null,
+          viewings: playerViewings.map((v) => ({
+            game_date: v.game_date,
+            opponent: v.opponent,
+            location: v.location,
+            rating_skating: v.rating_skating,
+            rating_shot: v.rating_shot,
+            rating_hands: v.rating_hands,
+            rating_iq: v.rating_iq,
+            rating_compete: v.rating_compete,
+            rating_physicality: v.rating_physicality,
+            rating_overall: v.rating_overall,
+            projection: v.projection,
+            notes: v.notes,
+          })),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setReport((data as any)?.report ?? "");
+      toast.success("Scouting report generated.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not generate report.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
@@ -113,6 +167,7 @@ const PlayerProfile = () => {
                     avg_compete: +avg(playerViewings.map((v) => v.rating_compete)).toFixed(1) || "",
                     avg_physicality: +avg(playerViewings.map((v) => v.rating_physicality)).toFixed(1) || "",
                     created_at: player.created_at,
+                    ai_scouting_report: report || "",
                   }],
                 },
                 {
@@ -135,6 +190,10 @@ const PlayerProfile = () => {
                 },
               ]}
             />
+            <Button variant="outline" size="sm" onClick={generateReport} disabled={reportLoading || playerViewings.length === 0}>
+              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {report ? "Regenerate Report" : "AI Report"}
+            </Button>
             <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
               <Plus className="w-4 h-4" />
               New Viewing
@@ -191,6 +250,30 @@ const PlayerProfile = () => {
           </div>
         ) : (
           <>
+            {(report || reportLoading) && (
+              <div className="glass-card rounded-xl p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-heading text-base font-semibold flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    AI Scouting Report
+                  </h3>
+                  {report && (
+                    <span className="text-xs text-muted-foreground">Included in exports</span>
+                  )}
+                </div>
+                {reportLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing viewings and generating report...
+                  </div>
+                ) : (
+                  <div className="prose prose-sm prose-invert max-w-none prose-headings:font-heading prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground">
+                    <ReactMarkdown>{report}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
               <div className="glass-card rounded-xl p-6">
                 <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
