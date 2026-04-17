@@ -275,14 +275,34 @@ const PlayerProfile = () => {
           <>
             {(report || reportLoading) && (
               <div className="glass-card rounded-xl p-6 mb-8">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                   <h3 className="font-heading text-base font-semibold flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-primary" />
                     AI Scouting Report
                   </h3>
-                  {report && (
-                    <span className="text-xs text-muted-foreground">Included in exports</span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {report && (
+                      <span className="text-xs text-muted-foreground">Included in exports</span>
+                    )}
+                    {report && !reportLoading && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateReport}
+                        disabled={!canGenerateReport}
+                        title={
+                          !tier.aiReports
+                            ? "AI reports are available on 2nd Line and 1st Line plans"
+                            : aiReportsRemaining <= 0
+                            ? `Monthly limit reached (${aiReportsThisMonth}/${tier.aiReportsPerMonth})`
+                            : undefined
+                        }
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Regenerate
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {reportLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
