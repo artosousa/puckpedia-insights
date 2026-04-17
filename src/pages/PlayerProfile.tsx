@@ -444,6 +444,7 @@ const PlayerProfile = () => {
                                 title="Clips & Photos for this viewing"
                               />
                             </div>
+                            <AiRatingSuggestions viewing={v} />
                           </div>
                         </AccordionContent>
                       </AccordionItem>
