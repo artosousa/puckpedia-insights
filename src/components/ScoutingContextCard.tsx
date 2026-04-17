@@ -11,7 +11,6 @@ import type { ConfidenceResult } from "@/lib/scoutConfidence";
 interface Props {
   player: Player;
   league: League | null;
-  confidence: ConfidenceResult;
 }
 
 const LEVEL_PRESETS = [
