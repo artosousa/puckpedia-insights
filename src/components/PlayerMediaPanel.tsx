@@ -489,7 +489,7 @@ function MediaViewerDialog({
               media.kind === "photo" ? (
                 <img src={url} alt="" className="max-w-full max-h-[80vh] object-contain" />
               ) : (
-                <video src={url} controls autoPlay className="max-w-full max-h-[80vh]" />
+                <TrackedVideo src={url} edit={media.edit} autoPlay className="max-w-full max-h-[80vh] w-full" />
               )
             ) : (
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
