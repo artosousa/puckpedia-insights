@@ -45,14 +45,16 @@ export function TrackedVideo({
 
   const cropOn = hasCrop && cropEnabled;
 
-  // Clamp currentTime to trim window
+  // Capture video aspect + clamp currentTime to trim window
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !trim) return;
+    if (!v) return;
     const onLoaded = () => {
-      if (v.currentTime < trim.in) v.currentTime = trim.in;
+      if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+      if (trim && v.currentTime < trim.in) v.currentTime = trim.in;
     };
     const onTimeUpdate = () => {
+      if (!trim) return;
       if (v.currentTime < trim.in) v.currentTime = trim.in;
       if (v.currentTime > trim.out) {
         v.pause();
