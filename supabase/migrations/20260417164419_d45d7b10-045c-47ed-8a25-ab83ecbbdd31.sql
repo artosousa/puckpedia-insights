@@ -1,0 +1,1 @@
+ALTER TABLE public.player_media ADD COLUMN IF NOT EXISTS edit jsonb;
