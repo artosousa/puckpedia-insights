@@ -139,7 +139,14 @@ const PlayerProfile = () => {
     );
   }
 
-  const overallAvg = +avg(playerViewings.map((v) => v.rating_overall)).toFixed(1);
+  // Each AI clip contributes its own "overall" = mean of its 6 metrics; blended with each viewing's overall
+  const aiClipOverallList = aiClipRatings
+    .map((c) => avg([c.skating, c.shot, c.hands, c.iq, c.compete, c.physicality]))
+    .filter((n) => n > 0);
+  const overallAvg = +avg([
+    ...playerViewings.map((v) => v.rating_overall),
+    ...aiClipOverallList,
+  ]).toFixed(1);
 
   const generateReport = async () => {
     if (!player) return;
