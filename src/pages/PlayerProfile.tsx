@@ -40,6 +40,7 @@ const PlayerProfile = () => {
   const { tier, canGenerateReport, aiReportsRemaining, aiReportsThisMonth } = useSubscription();
   const [viewingOpen, setViewingOpen] = useState(false);
   const [report, setReport] = useState<string>("");
+  const [reportGeneratedAt, setReportGeneratedAt] = useState<string | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -94,6 +95,28 @@ const PlayerProfile = () => {
     })();
     return () => { cancelled = true; };
   }, [id, viewings]);
+
+  // Load latest persisted AI scouting report for this player
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("ai_reports")
+        .select("report_text, updated_at, created_at")
+        .eq("player_id", id)
+        .not("report_text", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.report_text) {
+        setReport(data.report_text);
+        setReportGeneratedAt(data.updated_at ?? data.created_at ?? null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
 
   // Auto-computed Scout Confidence based on evidence + rating consistency.
   const confidenceResult = useMemo(() => {
@@ -219,11 +242,12 @@ const PlayerProfile = () => {
           })),
         },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message ?? "Report generation failed");
       const payload = data as any;
       if (payload?.ok === false || payload?.error) throw new Error(payload?.error ?? "Report generation failed");
       setReport(payload?.report ?? "");
-      toast.success("Scouting report generated.");
+      setReportGeneratedAt(payload?.generated_at ?? new Date().toISOString());
+      toast.success("Scouting report saved.");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not generate report.");
     } finally {
