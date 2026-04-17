@@ -284,10 +284,19 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
               analyzing={analyzingId === m.id}
               canAiAnalyze={caps.canAiAnalyze}
               onExpand={() => setExpanded(m)}
+              onEdit={() => setEditing(m)}
             />
           ))}
         </div>
       )}
+
+      <VideoEditorDialog
+        media={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(edit) => {
+          setItems((prev) => prev.map((x) => (editing && x.id === editing.id ? { ...x, edit } : x)));
+        }}
+      />
 
       <MediaViewerDialog
         media={expanded}
