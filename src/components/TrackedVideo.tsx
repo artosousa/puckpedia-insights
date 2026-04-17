@@ -31,11 +31,12 @@ export function TrackedVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<string>("none");
+  /** Intrinsic video aspect ratio. Used to size the container so transform coords align. */
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
 
   const trim = edit?.trim ?? null;
   const track = edit?.track ?? [];
   const hasCrop = track.length > 0;
-  // Default to FULL view; user toggles to preview the tracked region the AI uses.
   const [cropEnabled, setCropEnabled] = useState<boolean>(applyCrop ?? false);
 
   useEffect(() => {
