@@ -2,6 +2,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type MediaKind = "photo" | "video";
 
+export interface TrackKeyframe {
+  /** time in seconds (absolute, source video) */
+  t: number;
+  /** crop rect in normalized 0..1 coords (centerX, centerY, width, height) */
+  cx: number;
+  cy: number;
+  w: number;
+  h: number;
+}
+
+export interface MediaEdit {
+  /** trim in/out in seconds (absolute, source video) */
+  trim?: { in: number; out: number } | null;
+  /** keyframes for tracking the player; interpolated linearly between */
+  track?: TrackKeyframe[];
+}
+
 export interface PlayerMedia {
   id: string;
   user_id: string;
@@ -16,6 +33,7 @@ export interface PlayerMedia {
   notes: string | null;
   ai_analysis: string | null;
   ai_analyzed_at: string | null;
+  edit: MediaEdit | null;
   created_at: string;
 }
 
