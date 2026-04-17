@@ -49,18 +49,7 @@ const Account = () => {
   return (
     <div className="min-h-screen bg-background">
       <PaymentTestModeBanner />
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <ClipboardCheck className="w-5 h-5 text-primary" />
-            <span className="font-heading text-base font-bold">BarnNotes</span>
-            <span className="text-muted-foreground text-sm">/ Account</span>
-          </div>
-        </div>
-      </header>
+      <AppHeader crumb="Account" />
 
       <main className="container px-6 py-12 max-w-3xl">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
