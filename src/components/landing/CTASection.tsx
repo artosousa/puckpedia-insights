@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
@@ -19,9 +20,15 @@ const CTASection = () => {
           <p className="text-muted-foreground text-lg mb-10">
             Join scouts who've ditched the spreadsheets. Free for your first 50 evaluations.
           </p>
-          <Button variant="hero" size="lg" className="text-base px-8 py-6">
-            Get Started Free
-            <ArrowRight className="w-5 h-5 ml-1" />
+          <Button
+            asChild
+            size="lg"
+            className="text-base px-8 py-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-[0_10px_30px_-10px_hsl(var(--accent)/0.5)] hover:shadow-[0_12px_40px_-8px_hsl(var(--accent)/0.6)] transition-all duration-300"
+          >
+            <Link to="/auth">
+              Get Started Free
+              <ArrowRight className="w-5 h-5 ml-1" />
+            </Link>
           </Button>
         </motion.div>
       </div>
