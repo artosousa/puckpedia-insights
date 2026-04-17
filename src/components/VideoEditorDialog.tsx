@@ -24,6 +24,8 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
+  /** Intrinsic video aspect ratio (width / height). Drives crop aspect + container aspect. */
+  const [videoAspect, setVideoAspect] = useState<number>(16 / 9);
 
   const [trimIn, setTrimIn] = useState(0);
   const [trimOut, setTrimOut] = useState(0);
@@ -31,7 +33,7 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
 
   const [drawingRect, setDrawingRect] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
-  const [draggingId, setDraggingId] = useState<number | null>(null); // index of keyframe being dragged
+  const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
   const videoRef = useRef<HTMLVideoElement>(null);
