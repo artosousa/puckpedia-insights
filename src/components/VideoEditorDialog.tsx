@@ -151,12 +151,25 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
       return;
     }
     if (drawingRect) {
-      const w = Math.abs(drawingRect.x2 - drawingRect.x1);
-      const h = Math.abs(drawingRect.y2 - drawingRect.y1);
-      if (w > 0.03 && h > 0.03) {
+      const rawW = Math.abs(drawingRect.x2 - drawingRect.x1);
+      const rawH = Math.abs(drawingRect.y2 - drawingRect.y1);
+      if (rawW > 0.03 && rawH > 0.03) {
         const cx = (drawingRect.x1 + drawingRect.x2) / 2;
         const cy = (drawingRect.y1 + drawingRect.y2) / 2;
-        addOrReplaceKeyframe({ t: currentTime, cx, cy, w, h });
+        // Constrain crop to the video's aspect ratio (overlay is already sized to that aspect).
+        // overlay aspect == video aspect, so width/height in normalized coords share the same scale.
+        // Pick the smaller dimension as the constraint, then derive the other.
+        let w = rawW;
+        let h = rawH;
+        // crop aspect (in overlay-normalized units) should equal 1 (since overlay matches video aspect)
+        if (w > h) h = w;
+        else w = h;
+        // clamp inside [0,1] given the center
+        w = Math.min(w, 2 * cx, 2 * (1 - cx));
+        h = Math.min(h, 2 * cy, 2 * (1 - cy));
+        // re-square after clamping
+        const side = Math.min(w, h);
+        addOrReplaceKeyframe({ t: currentTime, cx, cy, w: side, h: side });
       }
       setDrawingRect(null);
     }
