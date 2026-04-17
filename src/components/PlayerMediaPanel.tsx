@@ -362,6 +362,7 @@ function MediaCard({
             {media.kind === "photo" ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
             {media.kind}
             {media.duration_seconds ? ` · ${Math.round(media.duration_seconds)}s` : ""}
+            {media.edit?.trim || (media.edit?.track && media.edit.track.length > 0) ? " · edited" : ""}
           </span>
           <div className="flex items-center gap-2">
             <button
