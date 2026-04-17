@@ -38,11 +38,10 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
-  const [customTag, setCustomTag] = useState("");
-  const [notes, setNotes] = useState("");
   const [expanded, setExpanded] = useState<PlayerMedia | null>(null);
   const [editing, setEditing] = useState<PlayerMedia | null>(null);
+  /** IDs of items uploaded in the current session that still need tagging. */
+  const [pendingTagIds, setPendingTagIds] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -66,20 +65,11 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId, viewingId, scope]);
 
-  const toggleTag = (t: string) =>
-    setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-
-  const addCustomTag = () => {
-    const t = customTag.trim();
-    if (!t || tags.includes(t)) return;
-    setTags((p) => [...p, t]);
-    setCustomTag("");
-  };
-
   const onFiles = async (files: FileList | null) => {
     if (!files || !user) return;
     const list = Array.from(files);
     setUploading(true);
+    const newlyUploaded: PlayerMedia[] = [];
     try {
       for (const file of list) {
         const isVideo = file.type.startsWith("video/");
@@ -112,21 +102,23 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
             continue;
           }
         }
-        await uploadPlayerMedia({
+        const created = await uploadPlayerMedia({
           file,
           userId: user.id,
           playerId,
           viewingId: viewingId ?? null,
           kind: isVideo ? "video" : "photo",
-          tags,
-          notes: notes || null,
+          tags: [],
+          notes: null,
           durationSeconds: duration,
         });
+        newlyUploaded.push(created);
       }
-      toast.success("Upload complete");
-      setTags([]);
-      setNotes("");
-      await load();
+      if (newlyUploaded.length > 0) {
+        toast.success(`Uploaded ${newlyUploaded.length} file${newlyUploaded.length > 1 ? "s" : ""} — add tags below`);
+        setItems((prev) => [...newlyUploaded, ...prev]);
+        setPendingTagIds((prev) => [...newlyUploaded.map((m) => m.id), ...prev]);
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Upload failed");
     } finally {
@@ -140,6 +132,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
     try {
       await deletePlayerMedia(m);
       setItems((prev) => prev.filter((x) => x.id !== m.id));
+      setPendingTagIds((prev) => prev.filter((id) => id !== m.id));
     } catch (e: any) {
       toast.error(e?.message ?? "Delete failed");
     }
@@ -169,7 +162,23 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
     }
   };
 
+  const saveTagsFor = async (id: string, tags: string[], notes: string | null) => {
+    try {
+      await updateMediaMeta(id, { tags, notes });
+      setItems((prev) => prev.map((x) => (x.id === id ? { ...x, tags, notes } : x)));
+      setPendingTagIds((prev) => prev.filter((p) => p !== id));
+      toast.success("Saved");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Save failed");
+    }
+  };
+
+  const skipTagging = (id: string) => {
+    setPendingTagIds((prev) => prev.filter((p) => p !== id));
+  };
+
   const accept = caps.canUploadVideos ? "image/*,video/*" : caps.canUploadPhotos ? "image/*" : "";
+  const pendingItems = items.filter((m) => pendingTagIds.includes(m.id));
 
   return (
     <section className="glass-card rounded-xl p-6">
@@ -184,17 +193,6 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
             {caps.canAiAnalyze ? " · AI analysis enabled" : ""}
           </p>
         </div>
-        {accept && (
-          <Button
-            variant="hero"
-            size="sm"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            Upload
-          </Button>
-        )}
         <input
           ref={fileRef}
           type="file"
@@ -206,67 +204,46 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       </div>
 
       {accept && (
-        <div className="mb-5 p-4 rounded-lg bg-surface-sunken border border-border/50">
-          <p className="text-xs text-muted-foreground mb-2">Tags applied to next upload</p>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {SKILL_TAGS.map((t) => (
-              <button
-                key={t}
-                onClick={() => toggleTag(t)}
-                className={`text-xs px-2.5 py-1 rounded-full border transition ${
-                  tags.includes(t)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-            {tags
-              .filter((t) => !SKILL_TAGS.includes(t as any))
-              .map((t) => (
-                <span
-                  key={t}
-                  className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 flex items-center gap-1"
-                >
-                  {t}
-                  <button onClick={() => toggleTag(t)} aria-label={`Remove ${t}`}>
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              placeholder="Add custom tag (e.g. zone-entry, PP1)"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addCustomTag();
-                }
-              }}
-              className="text-xs h-8"
-            />
-            <Button size="sm" variant="outline" onClick={addCustomTag} disabled={!customTag.trim()}>
-              Add
-            </Button>
-          </div>
-          <Textarea
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Optional caption / context"
-            className="mt-3 text-xs"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="w-full mb-5 p-6 rounded-lg border-2 border-dashed border-border hover:border-primary/60 bg-surface-sunken transition flex flex-col items-center justify-center gap-2 disabled:opacity-60"
+        >
+          {uploading ? (
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          ) : (
+            <Upload className="w-5 h-5 text-primary" />
+          )}
+          <span className="text-sm font-medium text-foreground">
+            {uploading ? "Uploading…" : "Upload photos or videos"}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            You'll add tags &amp; context after upload
+          </span>
+        </button>
       )}
 
       {!caps.canUploadVideos && (
         <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/30 text-xs flex items-start gap-2">
           <Lock className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
           <span><strong>2nd Line</strong> unlocks video uploads. <strong>1st Line</strong> adds AI analysis of photos and videos.</span>
+        </div>
+      )}
+
+      {pendingItems.length > 0 && (
+        <div className="mb-5 space-y-3">
+          <p className="text-xs uppercase tracking-wider text-primary font-semibold">
+            Tag your {pendingItems.length === 1 ? "upload" : `${pendingItems.length} uploads`}
+          </p>
+          {pendingItems.map((m) => (
+            <PendingTagCard
+              key={m.id}
+              media={m}
+              onSave={(tags, notes) => saveTagsFor(m.id, tags, notes)}
+              onSkip={() => skipTagging(m.id)}
+            />
+          ))}
         </div>
       )}
 
