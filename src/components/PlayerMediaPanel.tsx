@@ -149,7 +149,19 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       const { data, error } = await supabase.functions.invoke("analyze-player-media", {
         body: { media_id: m.id },
       });
-      if (error) throw error;
+      // Surface the real server error (e.g. "Video too large…", rate limit, credits)
+      if (error) {
+        // FunctionsHttpError exposes context.response with the JSON body
+        let serverMsg: string | null = null;
+        try {
+          const resp = (error as any)?.context?.response;
+          if (resp && typeof resp.json === "function") {
+            const body = await resp.json();
+            serverMsg = body?.error ?? null;
+          }
+        } catch { /* ignore */ }
+        throw new Error(serverMsg ?? error.message ?? "Analysis failed");
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       const analysis = (data as any).analysis as string;
       await setMediaAnalysis(m.id, analysis);

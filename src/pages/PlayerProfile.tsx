@@ -403,8 +403,13 @@ const PlayerProfile = () => {
                     AI Scouting Report
                   </h3>
                   <div className="flex items-center gap-3">
+                    {report && reportGeneratedAt && (
+                      <span className="text-xs text-muted-foreground">
+                        Generated {new Date(reportGeneratedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
+                    )}
                     {report && (
-                      <span className="text-xs text-muted-foreground">Included in exports</span>
+                      <span className="text-xs text-muted-foreground">Saved · included in exports</span>
                     )}
                     {report && !reportLoading && (
                       <Button
