@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { FREE_TIER, TIER_BY_ID, type Tier, type TierId } from "@/lib/tiers";
+import { TIER_BY_ID, type Tier } from "@/lib/tiers";
 import { stripeEnvironment } from "@/lib/stripe";
 
 interface SubRow {
@@ -64,12 +64,8 @@ export function useSubscription() {
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [user]);
 
-  const isActive = !!row && (row.status === "active" || row.status === "trialing") &&
-    (!row.current_period_end || new Date(row.current_period_end) > new Date());
-
-  const tier: Tier = isActive && row?.product_id && TIER_BY_ID[row.product_id as TierId]
-    ? TIER_BY_ID[row.product_id as TierId]
-    : FREE_TIER;
+  // 🚧 Payments paused: grant every signed-in user the top "1st Line" tier for testing.
+  const tier: Tier = TIER_BY_ID["pro"];
 
   const aiReportsRemaining = isFinite(tier.aiReportsPerMonth)
     ? Math.max(0, tier.aiReportsPerMonth - aiReportsThisMonth)
@@ -80,7 +76,7 @@ export function useSubscription() {
     loading,
     tier,
     tierId: tier.id,
-    status: row?.status ?? null,
+    status: "active",
     cancelAtPeriodEnd: !!row?.cancel_at_period_end,
     currentPeriodEnd: row?.current_period_end ?? null,
     hasStripeSubscription: !!row?.stripe_subscription_id,
