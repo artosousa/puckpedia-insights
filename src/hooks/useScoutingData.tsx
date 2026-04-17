@@ -129,9 +129,21 @@ export const ScoutingDataProvider = ({ children }: { children: ReactNode }) => {
     return data;
   };
 
+  const updatePlayer = async (id: string, patch: Partial<Player>) => {
+    const { error } = await supabase.from("players").update(patch as any).eq("id", id);
+    if (error) throw error;
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } as Player : p)));
+  };
+
+  const updateLeague = async (id: string, patch: Partial<League>) => {
+    const { error } = await supabase.from("leagues").update(patch as any).eq("id", id);
+    if (error) throw error;
+    setLeagues((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } as League : l)));
+  };
+
   return (
     <ScoutingContext.Provider
-      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing }}
+      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing, updatePlayer, updateLeague }}
     >
       {children}
     </ScoutingContext.Provider>
