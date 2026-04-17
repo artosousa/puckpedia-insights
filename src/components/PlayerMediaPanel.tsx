@@ -387,7 +387,7 @@ function MediaCard({
                 Expand
               </button>
             </div>
-            <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{media.ai_analysis}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{parseRatings(media.ai_analysis).text}</p>
           </div>
         ) : (
           canAiAnalyze && (
