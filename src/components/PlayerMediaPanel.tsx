@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -482,7 +482,9 @@ function MediaViewerDialog({
                   sections.map((s) => (
                     <div key={s.heading} className="rounded-lg border border-border/50 bg-background/60 p-3">
                       <p className="text-xs font-semibold text-foreground mb-1.5">{s.heading}</p>
-                      <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{s.body}</p>
+                      <div className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                        {renderWithYouTubeLinks(s.body)}
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -522,4 +524,34 @@ function parseAnalysis(text: string): { heading: string; body: string }[] {
   }
   if (current) sections.push(current);
   return sections.map((s) => ({ heading: s.heading, body: s.body.join("\n").trim() })).filter((s) => s.body);
+}
+
+function renderWithYouTubeLinks(text: string): React.ReactNode[] {
+  // Match: Search: "query"  or  Search: 'query'  or  Search: query (until end of line)
+  const regex = /Search:\s*["“']([^"”']+)["”']|Search:\s*([^\n]+)/gi;
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = regex.exec(text)) !== null) {
+    const query = (match[1] ?? match[2] ?? "").trim();
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    nodes.push(
+      <a
+        key={`yt-${key++}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline-offset-2 hover:underline font-medium"
+      >
+        ▶ Watch on YouTube: {query}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+  return nodes.length > 0 ? nodes : [text];
 }
