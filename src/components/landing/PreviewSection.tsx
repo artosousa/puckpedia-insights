@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import {
   TrendingUp,
   Target,
@@ -212,21 +213,10 @@ const PreviewSection = () => {
               <p className="text-xs text-muted-foreground mb-4">
                 Make the rink your own — every color, fully editable.
               </p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[
-                  "hsl(16, 78%, 57%)",
-                  "hsl(20, 65%, 50%)",
-                  "hsl(210, 40%, 45%)",
-                  "hsl(150, 50%, 45%)",
-                  "hsl(280, 55%, 55%)",
-                ].map((c, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square rounded-md border border-border/50"
-                    style={{ background: c }}
-                  />
-                ))}
-              </div>
+              <ThemeSwatches />
+              <p className="text-[10px] text-muted-foreground/70 mt-3">
+                Click a color to preview it across the site.
+              </p>
             </div>
 
             {/* Watchlist mini stat */}
