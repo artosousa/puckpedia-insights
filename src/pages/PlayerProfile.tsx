@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -7,12 +7,13 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  ArrowLeft, ClipboardCheck, Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
+  Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
+import { AppHeader } from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { stripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
