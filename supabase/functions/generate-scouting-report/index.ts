@@ -145,6 +145,28 @@ Deno.serve(async (req) => {
         }).join("\n\n")
       : "(no viewings logged)";
 
+    // Pull AI video analyses for this player to ground the report in actual film evidence
+    let mediaBlock = "(no AI video analyses available)";
+    if (body.player_id) {
+      const { data: media } = await admin
+        .from("player_media")
+        .select("kind, tags, ai_analysis, ai_analyzed_at, created_at, notes")
+        .eq("player_id", body.player_id)
+        .eq("user_id", user.id)
+        .not("ai_analysis", "is", null)
+        .order("ai_analyzed_at", { ascending: false })
+        .limit(10);
+      if (media && media.length) {
+        mediaBlock = media.map((m, i) => {
+          // Strip the <<RATINGS>>...<<END>> prefix if present, keep the prose
+          const raw = (m.ai_analysis ?? "").replace(/^<<RATINGS>>.*?<<END>>\n?/s, "").trim();
+          const tagLine = m.tags?.length ? ` [${m.tags.join(", ")}]` : "";
+          const captionLine = m.notes ? `\n   Caption: ${m.notes}` : "";
+          return `Clip ${i + 1} (${m.kind})${tagLine}${captionLine}\n${raw}`;
+        }).join("\n\n---\n\n");
+      }
+    }
+
     const calibrationBlock = level
       ? `COMPETITION LEVEL: ${level}. All ratings, language, and projections MUST be calibrated to this level. A "7" here means above average AT THIS LEVEL, not NHL-relative. Don't suggest unrealistic pro-track projections for recreational/adult-league players.`
       : `COMPETITION LEVEL: not specified. Treat ratings as generic and note this caveat in the Summary.`;
@@ -152,33 +174,33 @@ Deno.serve(async (req) => {
       ? `PLAYER BACKGROUND: ${player.player_context}. Factor age, hockey age, and frequency of play into recommendations and tone.`
       : "";
 
-    const systemPrompt = `You are a veteran hockey scout writing a full scouting report. Be specific, evidence-based, and reference the actual viewing notes and rating trends. Avoid generic platitudes. Write in clean markdown. Keep total length under 600 words.
+    const systemPrompt = `You are a veteran hockey scout writing a full scouting report. Be specific, evidence-based, and reference BOTH the in-person viewing notes AND the AI film breakdowns. When film evidence and live ratings disagree, surface the tension. Avoid generic platitudes. Write in clean markdown. Keep total length under 700 words.
 
 ${calibrationBlock}
 ${playerBgBlock}
 
 Use this exact structure:
 ## Summary
-1–2 sentence overview of the player AT THEIR LEVEL.
+1–2 sentence overview of the player AT THEIR LEVEL, synthesizing live viewings + film.
 
 ## Skating
 ## Shot
 ## Hands
 ## Hockey IQ
 ## Compete & Physicality
-For each tool: cite avg rating, the trend across viewings, and what the notes reveal. Frame everything relative to the player's level.
+For each tool: cite avg rating, the trend across viewings, what the live notes reveal, AND what the film breakdowns specifically observed. Quote brief film evidence where relevant. Frame everything relative to the player's level.
 
 ## Strengths
 ## Areas to Develop
-Bullet list, 3–5 items each. Recommendations should be appropriate for the player's level and background.
+Bullet list, 3–5 items each. Pull from BOTH viewing notes and film analysis. Recommendations should be appropriate for the player's level and background.
 
 ## Projection
-Based on the projection field consensus + ratings + LEVEL. For recreational players, frame as "next-level rec/beer-league development" rather than pro-track.
+Based on viewings + film + ratings + LEVEL. For recreational players, frame as "next-level rec/beer-league development" rather than pro-track.
 
 ## Recommendation
 Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale.`;
 
-    const userPrompt = `PLAYER: ${playerLine}\nTEAM: ${orgLine}\nVIEWINGS LOGGED: ${viewings.length}\n\n=== VIEWING LOG ===\n${viewingLines}`;
+    const userPrompt = `PLAYER: ${playerLine}\nTEAM: ${orgLine}\nVIEWINGS LOGGED: ${viewings.length}\n\n=== VIEWING LOG ===\n${viewingLines}\n\n=== AI FILM BREAKDOWNS ===\n${mediaBlock}`;
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
