@@ -287,6 +287,121 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   );
 }
 
+function PendingTagCard({
+  media,
+  onSave,
+  onSkip,
+}: {
+  media: PlayerMedia;
+  onSave: (tags: string[], notes: string | null) => void;
+  onSkip: () => void;
+}) {
+  const [tags, setTags] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState("");
+  const [notes, setNotes] = useState("");
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSignedUrl(media.storage_path).then((u) => {
+      if (!cancelled) setThumbUrl(u);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [media.storage_path]);
+
+  const toggleTag = (t: string) =>
+    setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (!t || tags.includes(t)) return;
+    setTags((p) => [...p, t]);
+    setCustomTag("");
+  };
+
+  return (
+    <div className="rounded-lg border border-primary/40 bg-primary/5 p-4 flex flex-col sm:flex-row gap-4">
+      <div className="w-full sm:w-32 h-32 sm:h-24 shrink-0 rounded overflow-hidden bg-black/40 flex items-center justify-center">
+        {thumbUrl ? (
+          media.kind === "photo" ? (
+            <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <video src={thumbUrl} muted className="w-full h-full object-cover" />
+          )
+        ) : (
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            {media.kind === "photo" ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+            Just uploaded · add tags &amp; context
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {SKILL_TAGS.map((t) => (
+            <button
+              key={t}
+              onClick={() => toggleTag(t)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                tags.includes(t)
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+          {tags
+            .filter((t) => !SKILL_TAGS.includes(t as any))
+            .map((t) => (
+              <span
+                key={t}
+                className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 flex items-center gap-1"
+              >
+                {t}
+                <button onClick={() => toggleTag(t)} aria-label={`Remove ${t}`}>
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={customTag}
+            onChange={(e) => setCustomTag(e.target.value)}
+            placeholder="Custom tag (e.g. zone-entry, PP1)"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustomTag();
+              }
+            }}
+            className="text-xs h-8"
+          />
+          <Button size="sm" variant="outline" onClick={addCustomTag} disabled={!customTag.trim()}>
+            Add
+          </Button>
+        </div>
+        <Textarea
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Optional caption / context"
+          className="text-xs"
+        />
+        <div className="flex gap-2 justify-end">
+          <Button size="sm" variant="ghost" onClick={onSkip}>Skip</Button>
+          <Button size="sm" variant="hero" onClick={() => onSave(tags, notes.trim() || null)}>
+            Save tags
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MediaCard({
   media,
   onDelete,
