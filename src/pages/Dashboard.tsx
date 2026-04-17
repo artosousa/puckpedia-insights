@@ -208,6 +208,82 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {(() => {
+          const playerPct = tier.playerLimit > 0 && isFinite(tier.playerLimit)
+            ? Math.min(100, Math.round((players.length / tier.playerLimit) * 100))
+            : 0;
+          const reportCap = tier.aiReportsPerMonth;
+          const reportPct = isFinite(reportCap) && reportCap > 0
+            ? Math.min(100, Math.round((aiReportsThisMonth / reportCap) * 100))
+            : 0;
+          const playerLimitLabel = isFinite(tier.playerLimit) ? tier.playerLimit : "∞";
+          const reportLimitLabel = isFinite(reportCap) ? reportCap : "∞";
+          const reportRemainingLabel = isFinite(aiReportsRemaining) ? aiReportsRemaining : "∞";
+          const playerNear = isFinite(tier.playerLimit) && playerPct >= 80;
+          const reportNear = isFinite(reportCap) && reportPct >= 80;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="glass-card rounded-xl p-5 mb-8"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-heading text-sm font-semibold">Plan usage</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {tier.name} plan · resets monthly
+                  </p>
+                </div>
+                <Link
+                  to="/pricing"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Upgrade
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Users className="w-3.5 h-3.5" />
+                      Players
+                    </span>
+                    <span className={playerNear ? "text-primary font-medium" : "text-muted-foreground"}>
+                      {players.length} / {playerLimitLabel}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${playerNear ? "bg-primary" : "bg-primary/70"}`}
+                      style={{ width: `${playerPct}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      AI reports this month
+                    </span>
+                    <span className={reportNear ? "text-primary font-medium" : "text-muted-foreground"}>
+                      {tier.aiReports
+                        ? `${aiReportsThisMonth} / ${reportLimitLabel}${isFinite(reportCap) ? ` · ${reportRemainingLabel} left` : ""}`
+                        : "Not included"}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${tier.aiReports ? (reportNear ? "bg-primary" : "bg-primary/70") : "bg-muted"}`}
+                      style={{ width: `${tier.aiReports ? reportPct : 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-heading text-lg font-semibold">Your Players</h2>
           <p className="text-xs text-muted-foreground">
