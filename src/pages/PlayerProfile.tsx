@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -50,14 +50,65 @@ const PlayerProfile = () => {
     [viewings, id]
   );
 
+  // AI ratings pulled from analyzed clips for this player
+  type AiClipRatings = {
+    skating: number | null;
+    shot: number | null;
+    hands: number | null;
+    iq: number | null;
+    compete: number | null;
+    physicality: number | null;
+  };
+  const [aiClipRatings, setAiClipRatings] = useState<AiClipRatings[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("player_media")
+        .select("ai_analysis")
+        .eq("player_id", id)
+        .not("ai_analysis", "is", null);
+      if (cancelled || !data) return;
+      const out: AiClipRatings[] = [];
+      for (const row of data) {
+        const text = row.ai_analysis as string | null;
+        if (!text) continue;
+        const m = text.match(/^<<RATINGS>>(.*?)<<END>>/s);
+        if (!m) continue;
+        try {
+          const r = JSON.parse(m[1]);
+          out.push({
+            skating: typeof r.skating === "number" ? r.skating : null,
+            shot: typeof r.shot === "number" ? r.shot : null,
+            hands: typeof r.hands === "number" ? r.hands : null,
+            iq: typeof r.iq === "number" ? r.iq : null,
+            compete: typeof r.compete === "number" ? r.compete : null,
+            physicality: typeof r.physicality === "number" ? r.physicality : null,
+          });
+        } catch { /* skip */ }
+      }
+      setAiClipRatings(out);
+    })();
+    return () => { cancelled = true; };
+  }, [id, viewings]);
+
+  // Per-metric averages blended from viewings + AI clips
+  const blendedAvg = (metric: keyof AiClipRatings, viewingField: keyof typeof playerViewings[number]) =>
+    avg([
+      ...playerViewings.map((v) => v[viewingField] as number | null),
+      ...aiClipRatings.map((c) => c[metric]),
+    ]);
+
   const radarData = useMemo(() => [
-    { attr: "Skating", value: +avg(playerViewings.map((v) => v.rating_skating)).toFixed(1) },
-    { attr: "Shot", value: +avg(playerViewings.map((v) => v.rating_shot)).toFixed(1) },
-    { attr: "Hands", value: +avg(playerViewings.map((v) => v.rating_hands)).toFixed(1) },
-    { attr: "IQ", value: +avg(playerViewings.map((v) => v.rating_iq)).toFixed(1) },
-    { attr: "Compete", value: +avg(playerViewings.map((v) => v.rating_compete)).toFixed(1) },
-    { attr: "Physical", value: +avg(playerViewings.map((v) => v.rating_physicality)).toFixed(1) },
-  ], [playerViewings]);
+    { attr: "Skating", value: +blendedAvg("skating", "rating_skating").toFixed(1) },
+    { attr: "Shot", value: +blendedAvg("shot", "rating_shot").toFixed(1) },
+    { attr: "Hands", value: +blendedAvg("hands", "rating_hands").toFixed(1) },
+    { attr: "IQ", value: +blendedAvg("iq", "rating_iq").toFixed(1) },
+    { attr: "Compete", value: +blendedAvg("compete", "rating_compete").toFixed(1) },
+    { attr: "Physical", value: +blendedAvg("physicality", "rating_physicality").toFixed(1) },
+  ], [playerViewings, aiClipRatings]);
 
   const trendData = useMemo(() => playerViewings.map((v) => ({
     date: new Date(v.game_date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
@@ -88,7 +139,14 @@ const PlayerProfile = () => {
     );
   }
 
-  const overallAvg = +avg(playerViewings.map((v) => v.rating_overall)).toFixed(1);
+  // Each AI clip contributes its own "overall" = mean of its 6 metrics; blended with each viewing's overall
+  const aiClipOverallList = aiClipRatings
+    .map((c) => avg([c.skating, c.shot, c.hands, c.iq, c.compete, c.physicality]))
+    .filter((n) => n > 0);
+  const overallAvg = +avg([
+    ...playerViewings.map((v) => v.rating_overall),
+    ...aiClipOverallList,
+  ]).toFixed(1);
 
   const generateReport = async () => {
     if (!player) return;
@@ -258,6 +316,11 @@ const PlayerProfile = () => {
           <div className="glass-card rounded-xl p-5">
             <p className="text-xs text-muted-foreground mb-1">Avg Overall</p>
             <p className="font-heading text-2xl font-bold text-primary">{overallAvg || "—"}</p>
+            {aiClipOverallList.length > 0 && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Blends {playerViewings.length} viewing{playerViewings.length === 1 ? "" : "s"} + {aiClipOverallList.length} AI clip{aiClipOverallList.length === 1 ? "" : "s"}
+              </p>
+            )}
           </div>
           <div className="glass-card rounded-xl p-5">
             <p className="text-xs text-muted-foreground mb-1">Height</p>
