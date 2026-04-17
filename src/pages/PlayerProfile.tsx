@@ -316,6 +316,11 @@ const PlayerProfile = () => {
           <div className="glass-card rounded-xl p-5">
             <p className="text-xs text-muted-foreground mb-1">Avg Overall</p>
             <p className="font-heading text-2xl font-bold text-primary">{overallAvg || "—"}</p>
+            {aiClipOverallList.length > 0 && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Blends {playerViewings.length} viewing{playerViewings.length === 1 ? "" : "s"} + {aiClipOverallList.length} AI clip{aiClipOverallList.length === 1 ? "" : "s"}
+              </p>
+            )}
           </div>
           <div className="glass-card rounded-xl p-5">
             <p className="text-xs text-muted-foreground mb-1">Height</p>
