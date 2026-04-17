@@ -33,10 +33,7 @@ const Pricing = () => {
   };
 
   const handleSelect = async (tier: Tier) => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    if (!user) { navigate("/auth"); return; }
     // Already on this tier — manage in portal (or nothing for free)
     if (tierId === tier.id) {
       if (tier.id === "peewee") return;
@@ -46,9 +43,7 @@ const Pricing = () => {
     // Downgrading to free PeeWee — must cancel via portal (no $0 Stripe price)
     if (tier.id === "peewee") {
       if (!hasStripeSubscription) return;
-      await openPortal(
-        "Cancel your current plan in the portal — you'll keep access until your renewal date, then drop to Healthy Scratch.",
-      );
+      await openPortal("Cancel your current plan in the portal — you'll keep access until your renewal date, then drop to Healthy Scratch.");
       return;
     }
     // Existing subscriber switching paid tiers — use portal
@@ -67,10 +62,7 @@ const Pricing = () => {
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="container flex items-center justify-between h-14 px-6">
           <div className="flex items-center gap-3">
-            <Link
-              to={user ? "/dashboard" : "/"}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <Link to={user ? "/dashboard" : "/"} className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <ClipboardCheck className="w-5 h-5 text-primary" />
@@ -81,8 +73,14 @@ const Pricing = () => {
       </header>
 
       <main className="container px-6 py-12 max-w-6xl">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-          <h1 className="font-heading text-4xl md:text-5xl font-bold mb-3">Pick your plan.</h1>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <h1 className="font-heading text-4xl md:text-5xl font-bold mb-3">
+            Pick your plan.
+          </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             From Healthy Scratch to 1st Line — scale your scouting workflow as your prospect list grows.
           </p>
@@ -93,9 +91,7 @@ const Pricing = () => {
             <button
               onClick={() => setBilling("monthly")}
               className={`px-4 py-1.5 text-sm rounded-full transition-colors ${
-                billing === "monthly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                billing === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Monthly
@@ -103,9 +99,7 @@ const Pricing = () => {
             <button
               onClick={() => setBilling("yearly")}
               className={`px-4 py-1.5 text-sm rounded-full transition-colors flex items-center gap-2 ${
-                billing === "yearly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                billing === "yearly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Yearly
@@ -143,7 +137,9 @@ const Pricing = () => {
                   {price ? (
                     <>
                       <span className="font-heading text-4xl font-bold">${price.amount}</span>
-                      <span className="text-muted-foreground text-sm">/{billing === "monthly" ? "mo" : "yr"}</span>
+                      <span className="text-muted-foreground text-sm">
+                        /{billing === "monthly" ? "mo" : "yr"}
+                      </span>
                     </>
                   ) : (
                     <span className="font-heading text-4xl font-bold">$0</span>
@@ -153,9 +149,7 @@ const Pricing = () => {
                 <ul className="space-y-2.5 text-sm mb-6 flex-1">
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                    <span>
-                      {limit} player{limit === 1 ? "" : "s"}
-                    </span>
+                    <span>{limit} player{limit === 1 ? "" : "s"}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -185,14 +179,8 @@ const Pricing = () => {
                 >
                   {portalLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {isCurrent
-                    ? tier.id === "peewee"
-                      ? "Current plan"
-                      : "Manage plan"
-                    : tier.id === "peewee"
-                      ? hasStripeSubscription
-                        ? "Cancel paid plan"
-                        : "Free forever"
-                      : `Choose ${tier.name}`}
+                    ? tier.id === "peewee" ? "Current plan" : "Manage plan"
+                    : tier.id === "peewee" ? (hasStripeSubscription ? "Cancel paid plan" : "Free forever") : `Choose ${tier.name}`}
                 </Button>
                 {isCurrent && currentPeriodEnd && tier.id !== "peewee" && (
                   <p className="text-[11px] text-muted-foreground mt-2 text-center">
