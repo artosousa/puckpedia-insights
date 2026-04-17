@@ -155,6 +155,9 @@ const Account = () => {
             </p>
           )}
         </section>
+
+        {/* Appearance / theme */}
+        <ThemeEditor />
       </main>
     </div>
   );
