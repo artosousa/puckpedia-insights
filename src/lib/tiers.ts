@@ -15,7 +15,7 @@ export interface Tier {
 export const TIERS: Tier[] = [
   {
     id: "peewee",
-    name: "PeeWee",
+    name: "4th Line",
     tagline: "Get on the ice. Free forever.",
     playerLimit: 10,
     aiReports: false,
@@ -25,7 +25,7 @@ export const TIERS: Tier[] = [
   },
   {
     id: "junior",
-    name: "Junior",
+    name: "3rd Line",
     tagline: "For scouts tracking a small list.",
     playerLimit: 25,
     aiReports: false,
@@ -35,7 +35,7 @@ export const TIERS: Tier[] = [
   },
   {
     id: "minor",
-    name: "Minor",
+    name: "2nd Line",
     tagline: "For active regional scouts.",
     playerLimit: 50,
     aiReports: true,
@@ -46,7 +46,7 @@ export const TIERS: Tier[] = [
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "1st Line",
     tagline: "Unlimited players + unlimited AI reports.",
     playerLimit: Infinity,
     aiReports: true,
