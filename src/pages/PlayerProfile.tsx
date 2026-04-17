@@ -80,6 +80,55 @@ const PlayerProfile = () => {
 
   const overallAvg = +avg(playerViewings.map((v) => v.rating_overall)).toFixed(1);
 
+  const generateReport = async () => {
+    if (!player) return;
+    if (playerViewings.length === 0) {
+      toast.error("Log at least one viewing before generating a report.");
+      return;
+    }
+    setReportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-scouting-report", {
+        body: {
+          player: {
+            first_name: player.first_name,
+            last_name: player.last_name,
+            position: player.position,
+            shoots: player.shoots,
+            jersey_number: player.jersey_number,
+            date_of_birth: player.date_of_birth,
+            height_cm: player.height_cm,
+            weight_kg: player.weight_kg,
+          },
+          team: team?.name ?? null,
+          league: league?.name ?? null,
+          viewings: playerViewings.map((v) => ({
+            game_date: v.game_date,
+            opponent: v.opponent,
+            location: v.location,
+            rating_skating: v.rating_skating,
+            rating_shot: v.rating_shot,
+            rating_hands: v.rating_hands,
+            rating_iq: v.rating_iq,
+            rating_compete: v.rating_compete,
+            rating_physicality: v.rating_physicality,
+            rating_overall: v.rating_overall,
+            projection: v.projection,
+            notes: v.notes,
+          })),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setReport((data as any)?.report ?? "");
+      toast.success("Scouting report generated.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not generate report.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
