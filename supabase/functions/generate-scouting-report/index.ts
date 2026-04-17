@@ -235,15 +235,30 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
       return respond({ ok: false, error: "AI returned an empty report. Try again." });
     }
 
-    if (body.player_id) {
-      await admin.from("ai_reports").insert({ user_id: user.id, player_id: body.player_id });
-    } else {
-      await admin.from("ai_reports").insert({ user_id: user.id, player_id: "00000000-0000-0000-0000-000000000000" });
-    }
+    const playerIdForRow = body.player_id ?? "00000000-0000-0000-0000-000000000000";
+    const nowIso = new Date().toISOString();
+
+    // Clear previous latest report text for this player (audit rows stay as usage counters)
+    await admin
+      .from("ai_reports")
+      .update({ report_text: null })
+      .eq("user_id", user.id)
+      .eq("player_id", playerIdForRow)
+      .not("report_text", "is", null);
+
+    // Insert the new "latest" row carrying the report text (also counts as 1 usage tick)
+    await admin.from("ai_reports").insert({
+      user_id: user.id,
+      player_id: playerIdForRow,
+      report_text: report,
+      model: "google/gemini-2.5-flash",
+      updated_at: nowIso,
+    });
 
     return respond({
       ok: true,
       report,
+      generated_at: nowIso,
       used: used + 1,
       limit: isFinite(limit) ? limit : null,
     });
