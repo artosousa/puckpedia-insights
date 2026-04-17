@@ -37,13 +37,7 @@ const LEVEL_PRESETS = [
   "Pro (ECHL / AHL / NHL)",
 ];
 
-const CONFIDENCE_STYLE: Record<string, string> = {
-  low: "bg-muted/40 text-muted-foreground border-border",
-  medium: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-  high: "bg-primary/15 text-primary border-primary/40",
-};
-
-export function ScoutingContextCard({ player, league, confidence }: Props) {
+export function ScoutingContextCard({ player, league }: Props) {
   const { updatePlayer, updateLeague } = useScoutingData();
   const [level, setLevel] = useState(league?.level ?? "");
   const [context, setContext] = useState(player.player_context ?? "");
