@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type League = { id: string; name: string; abbreviation: string | null };
@@ -34,7 +34,22 @@ export type Viewing = {
   created_at: string;
 };
 
-export const useScoutingData = () => {
+type Ctx = {
+  leagues: League[];
+  teams: Team[];
+  players: Player[];
+  viewings: Viewing[];
+  loading: boolean;
+  refresh: () => Promise<void>;
+  createLeague: (name: string) => Promise<string>;
+  createTeam: (name: string, league_id: string | null) => Promise<string>;
+  createPlayer: (input: Omit<Player, "id" | "created_at">) => Promise<Player>;
+  createViewing: (input: Omit<Viewing, "id" | "created_at">) => Promise<Viewing>;
+};
+
+const ScoutingContext = createContext<Ctx | null>(null);
+
+export const ScoutingDataProvider = ({ children }: { children: ReactNode }) => {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -104,8 +119,17 @@ export const useScoutingData = () => {
     return data;
   };
 
-  return {
-    leagues, teams, players, viewings, loading,
-    refresh, createLeague, createTeam, createPlayer, createViewing,
-  };
+  return (
+    <ScoutingContext.Provider
+      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing }}
+    >
+      {children}
+    </ScoutingContext.Provider>
+  );
+};
+
+export const useScoutingData = (): Ctx => {
+  const ctx = useContext(ScoutingContext);
+  if (!ctx) throw new Error("useScoutingData must be used within ScoutingDataProvider");
+  return ctx;
 };
