@@ -597,7 +597,39 @@ function RatingsBlock({ ratings }: { ratings: AiRatings }) {
   );
 }
 
-function parseAnalysis(text: string): { heading: string; body: string }[] {
+function CompactRatings({ ratings }: { ratings: AiRatings }) {
+  const rows: { key: keyof AiRatings; label: string }[] = [
+    { key: "skating", label: "SKT" },
+    { key: "shot", label: "SHT" },
+    { key: "hands", label: "HND" },
+    { key: "iq", label: "IQ" },
+    { key: "compete", label: "CMP" },
+    { key: "physicality", label: "PHY" },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-1.5 rounded border border-primary/20 bg-primary/5 p-1.5">
+      {rows.map(({ key, label }) => {
+        const v = ratings[key] as number | null;
+        return (
+          <div key={key} className="flex items-center gap-1.5">
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-7 shrink-0">{label}</span>
+            <div className="flex-1 h-1 rounded-full bg-background/80 overflow-hidden">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${typeof v === "number" ? Math.max(0, Math.min(100, v * 10)) : 0}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-mono w-3 text-right text-foreground">
+              {typeof v === "number" ? v.toFixed(0) : "—"}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
   if (!text) return [];
   const known = ["Observations", "Areas to Improve", "Recommended Resources"];
   const lines = text.split("\n");
