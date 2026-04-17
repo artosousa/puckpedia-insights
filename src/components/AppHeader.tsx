@@ -64,7 +64,6 @@ export const AppHeader = ({
       to: "__add",
       onClick: tryAddPlayer,
     },
-    { label: `${tier.name} plan`, icon: Sparkles, to: "/pricing", onClick: () => navigate("/pricing") },
     { label: "Account", icon: undefined, to: "/account", onClick: () => navigate("/account") },
   ];
 
