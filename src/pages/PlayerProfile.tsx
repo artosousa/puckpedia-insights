@@ -95,6 +95,30 @@ const PlayerProfile = () => {
     return () => { cancelled = true; };
   }, [id, viewings]);
 
+  // Auto-computed Scout Confidence based on evidence + rating consistency.
+  const confidenceResult = useMemo(() => {
+    return computeScoutConfidence({
+      viewingsCount: playerViewings.length,
+      aiClipsCount: aiClipRatings.length,
+      metrics: {
+        skating: [...playerViewings.map((v) => v.rating_skating), ...aiClipRatings.map((c) => c.skating)],
+        shot: [...playerViewings.map((v) => v.rating_shot), ...aiClipRatings.map((c) => c.shot)],
+        hands: [...playerViewings.map((v) => v.rating_hands), ...aiClipRatings.map((c) => c.hands)],
+        iq: [...playerViewings.map((v) => v.rating_iq), ...aiClipRatings.map((c) => c.iq)],
+        compete: [...playerViewings.map((v) => v.rating_compete), ...aiClipRatings.map((c) => c.compete)],
+        physicality: [...playerViewings.map((v) => v.rating_physicality), ...aiClipRatings.map((c) => c.physicality)],
+      },
+    });
+  }, [playerViewings, aiClipRatings]);
+
+  // Persist when the computed level changes.
+  useEffect(() => {
+    if (!player) return;
+    if (playerViewings.length === 0 && aiClipRatings.length === 0) return;
+    if (player.scout_confidence === confidenceResult.level) return;
+    updatePlayer(player.id, { scout_confidence: confidenceResult.level }).catch(() => {});
+  }, [player?.id, confidenceResult.level, playerViewings.length, aiClipRatings.length]);
+
   // Per-metric averages blended from viewings + AI clips
   const blendedAvg = (metric: keyof AiClipRatings, viewingField: keyof typeof playerViewings[number]) =>
     avg([
