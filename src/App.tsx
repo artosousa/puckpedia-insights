@@ -8,6 +8,8 @@ import Dashboard from "./pages/Dashboard.tsx";
 import Players from "./pages/Players.tsx";
 import PlayerProfile from "./pages/PlayerProfile.tsx";
 import Auth from "./pages/Auth.tsx";
+import Pricing from "./pages/Pricing.tsx";
+import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ScoutingDataProvider } from "./hooks/useScoutingData";
 import { AuthProvider } from "./hooks/useAuth";
@@ -26,6 +28,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/checkout/return" element={<CheckoutReturn />} />
               <Route
                 path="/dashboard"
                 element={
