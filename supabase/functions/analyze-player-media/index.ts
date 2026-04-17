@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
             {
               role: "user",
               content: [
-                { type: "text", text: `Context — tags: ${(media.tags ?? []).join(", ") || "none"}.${media.notes ? ` Notes: ${media.notes}` : ""} Your prior written analysis:\n\n${analysisText}` },
+                { type: "text", text: `${trimLine ? trimLine + "\n" : ""}${cropLine ? cropLine + "\n" : ""}Context — tags: ${(media.tags ?? []).join(", ") || "none"}.${media.notes ? ` Notes: ${media.notes}` : ""} Your prior written analysis:\n\n${analysisText}` },
                 { type: "image_url", image_url: { url: dataUrl } },
               ],
             },
