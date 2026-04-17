@@ -180,8 +180,15 @@ const Pricing = () => {
                   {portalLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {isCurrent
                     ? tier.id === "peewee" ? "Current plan" : "Manage plan"
-                    : tier.id === "peewee" ? "Free forever" : `Choose ${tier.name}`}
+                    : tier.id === "peewee" ? (hasStripeSubscription ? "Cancel paid plan" : "Free forever") : `Choose ${tier.name}`}
                 </Button>
+                {isCurrent && currentPeriodEnd && tier.id !== "peewee" && (
+                  <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                    {cancelAtPeriodEnd
+                      ? `Cancels on ${new Date(currentPeriodEnd).toLocaleDateString()}`
+                      : `Renews on ${new Date(currentPeriodEnd).toLocaleDateString()}`}
+                  </p>
+                )}
               </motion.div>
             );
           })}
