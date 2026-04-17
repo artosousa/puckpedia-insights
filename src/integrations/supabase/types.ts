@@ -192,6 +192,48 @@ export type Database = {
           },
         ]
       }
+      user_theme_prefs: {
+        Row: {
+          accent: string | null
+          background: string | null
+          border: string | null
+          card: string | null
+          foreground: string | null
+          primary_color: string | null
+          primary_foreground: string | null
+          surface_elevated: string | null
+          surface_sunken: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent?: string | null
+          background?: string | null
+          border?: string | null
+          card?: string | null
+          foreground?: string | null
+          primary_color?: string | null
+          primary_foreground?: string | null
+          surface_elevated?: string | null
+          surface_sunken?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          accent?: string | null
+          background?: string | null
+          border?: string | null
+          card?: string | null
+          foreground?: string | null
+          primary_color?: string | null
+          primary_foreground?: string | null
+          surface_elevated?: string | null
+          surface_sunken?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       viewings: {
         Row: {
           created_at: string
