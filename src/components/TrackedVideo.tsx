@@ -98,13 +98,17 @@ export function TrackedVideo({
   }, [cropOn, JSON.stringify(track)]);
 
   return (
-    <div ref={containerRef} className={`relative overflow-hidden bg-black ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative overflow-hidden bg-black ${className}`}
+      style={cropOn && videoAspect ? { aspectRatio: String(videoAspect) } : undefined}
+    >
       <video
         ref={videoRef}
         src={src}
         controls={controls}
         autoPlay={autoPlay}
-        className="w-full h-full object-contain origin-center"
+        className={`w-full h-full origin-center ${cropOn ? "object-cover" : "object-contain"}`}
         style={{ transform, transition: cropOn ? "transform 80ms linear" : "none" }}
       />
       {hasCrop && showCropToggle && (
