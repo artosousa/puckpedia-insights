@@ -16,6 +16,7 @@ export type Player = {
   jersey_number: number | null;
   team_id: string | null;
   player_context: string | null;
+  scout_confidence: string | null;
   created_at: string;
 };
 export type Viewing = {
