@@ -24,6 +24,7 @@ import { PlayerMediaPanel } from "@/components/PlayerMediaPanel";
 import { ScoutingContextCard } from "@/components/ScoutingContextCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AiRatingSuggestions } from "@/components/AiRatingSuggestions";
+import { computeScoutConfidence } from "@/lib/scoutConfidence";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -35,7 +36,7 @@ const avg = (nums: (number | null)[]) => {
 const PlayerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { players, teams, leagues, viewings, loading } = useScoutingData();
+  const { players, teams, leagues, viewings, loading, updatePlayer } = useScoutingData();
   const { tier, canGenerateReport, aiReportsRemaining, aiReportsThisMonth } = useSubscription();
   const [viewingOpen, setViewingOpen] = useState(false);
   const [report, setReport] = useState<string>("");
@@ -93,6 +94,30 @@ const PlayerProfile = () => {
     })();
     return () => { cancelled = true; };
   }, [id, viewings]);
+
+  // Auto-computed Scout Confidence based on evidence + rating consistency.
+  const confidenceResult = useMemo(() => {
+    return computeScoutConfidence({
+      viewingsCount: playerViewings.length,
+      aiClipsCount: aiClipRatings.length,
+      metrics: {
+        skating: [...playerViewings.map((v) => v.rating_skating), ...aiClipRatings.map((c) => c.skating)],
+        shot: [...playerViewings.map((v) => v.rating_shot), ...aiClipRatings.map((c) => c.shot)],
+        hands: [...playerViewings.map((v) => v.rating_hands), ...aiClipRatings.map((c) => c.hands)],
+        iq: [...playerViewings.map((v) => v.rating_iq), ...aiClipRatings.map((c) => c.iq)],
+        compete: [...playerViewings.map((v) => v.rating_compete), ...aiClipRatings.map((c) => c.compete)],
+        physicality: [...playerViewings.map((v) => v.rating_physicality), ...aiClipRatings.map((c) => c.physicality)],
+      },
+    });
+  }, [playerViewings, aiClipRatings]);
+
+  // Persist when the computed level changes.
+  useEffect(() => {
+    if (!player) return;
+    if (playerViewings.length === 0 && aiClipRatings.length === 0) return;
+    if (player.scout_confidence === confidenceResult.level) return;
+    updatePlayer(player.id, { scout_confidence: confidenceResult.level }).catch(() => {});
+  }, [player?.id, confidenceResult.level, playerViewings.length, aiClipRatings.length]);
 
   // Per-metric averages blended from viewings + AI clips
   const blendedAvg = (metric: keyof AiClipRatings, viewingField: keyof typeof playerViewings[number]) =>
@@ -332,7 +357,7 @@ const PlayerProfile = () => {
           </div>
         </div>
 
-        <ScoutingContextCard player={player} league={league ?? null} />
+        <ScoutingContextCard player={player} league={league ?? null} confidence={confidenceResult} />
 
         {playerViewings.length === 0 ? (
           <div className="glass-card rounded-xl p-12 text-center">
