@@ -85,6 +85,6 @@
   }
 
   .glow-ember {
-    box-shadow: 0 0 40px hsl(16 78% 57% / 0.15), 0 0 80px hsl(16 78% 57% / 0.05);
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.18), 0 0 80px hsl(var(--primary) / 0.06);
   }
 }
