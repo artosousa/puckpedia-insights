@@ -136,6 +136,14 @@ export async function updateMediaEdit(id: string, edit: MediaEdit | null): Promi
   if (error) throw error;
 }
 
+export async function updateMediaMeta(id: string, patch: { tags?: string[]; notes?: string | null }): Promise<void> {
+  const { error } = await supabase
+    .from("player_media" as any)
+    .update(patch)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 /** Linearly interpolate a tracking rect at time `t`. Returns null when no keyframes. */
 export function rectAtTime(track: TrackKeyframe[] | undefined | null, t: number): TrackKeyframe | null {
   if (!track || track.length === 0) return null;
