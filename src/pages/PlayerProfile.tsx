@@ -357,7 +357,7 @@ const PlayerProfile = () => {
           </div>
         </div>
 
-        <ScoutingContextCard player={player} league={league ?? null} confidence={confidenceResult} />
+        <ScoutingContextCard player={player} league={league ?? null} />
 
         {playerViewings.length === 0 ? (
           <div className="glass-card rounded-xl p-12 text-center">
