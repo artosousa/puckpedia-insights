@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Players from "./pages/Players.tsx";
+import PlayerProfile from "./pages/PlayerProfile.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { ScoutingDataProvider } from "./hooks/useScoutingData";
@@ -38,6 +39,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Players />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/players/:id"
+                element={
+                  <ProtectedRoute>
+                    <PlayerProfile />
                   </ProtectedRoute>
                 }
               />
