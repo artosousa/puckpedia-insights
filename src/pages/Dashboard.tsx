@@ -10,7 +10,6 @@ import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { useAuth } from "@/hooks/useAuth";
-import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { ExportMenu } from "@/components/ExportMenu";
 
 const Dashboard = () => {
@@ -164,8 +163,6 @@ const Dashboard = () => {
             </motion.div>
           ))}
         </div>
-
-        <DashboardCharts viewings={viewings} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <motion.div

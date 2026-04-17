@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ClipboardCheck, Plus, Search, ArrowLeft, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
@@ -9,6 +9,7 @@ import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
 
 const Players = () => {
+  const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -122,7 +123,8 @@ const Players = () => {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="glass-card rounded-xl p-5 hover:border-primary/40 transition-colors group"
+                  className="glass-card rounded-xl p-5 hover:border-primary/40 transition-colors group cursor-pointer"
+                  onClick={() => navigate(`/players/${p.id}`)}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -149,7 +151,7 @@ const Players = () => {
                     variant="outline"
                     size="sm"
                     className="w-full"
-                    onClick={() => setViewingPlayer(p)}
+                    onClick={(e) => { e.stopPropagation(); setViewingPlayer(p); }}
                   >
                     <Plus className="w-3.5 h-3.5" />
                     New Viewing
