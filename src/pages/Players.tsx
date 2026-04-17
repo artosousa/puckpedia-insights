@@ -1,15 +1,15 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ClipboardCheck, Plus, Search, ArrowLeft, ClipboardList, Lock } from "lucide-react";
+import { Plus, ClipboardList, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSubscription } from "@/hooks/useSubscription";
+import { AppHeader } from "@/components/AppHeader";
 
 const Players = () => {
   const navigate = useNavigate();
@@ -47,37 +47,15 @@ const Players = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <ClipboardCheck className="w-5 h-5 text-primary" />
-            <span className="font-heading text-base font-bold">BarnNotes</span>
-            <span className="text-muted-foreground text-sm">/ Players</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search players..."
-                className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-56 focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-              <SelectTrigger className="h-9 w-40 bg-secondary border-none text-sm">
-                <SelectValue placeholder="All leagues" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All leagues</SelectItem>
-                {leagues.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <AppHeader
+        crumb="Players"
+        searchValue={query}
+        onSearchChange={setQuery}
+        leagueFilter={leagueFilter}
+        onLeagueFilterChange={setLeagueFilter}
+        onAddPlayer={tryAddPlayer}
+        rightSlot={
+          <>
             <ExportMenu
               filename="barnnotes-players"
               sheets={[
@@ -107,9 +85,9 @@ const Players = () => {
               {atLimit ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               Add Player
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="container px-6 py-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>

@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, ClipboardCheck, ExternalLink, Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { TIER_BY_ID, aiReportsLimitLabel } from "@/lib/tiers";
 import { openBillingPortal } from "@/lib/stripe";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { AppHeader } from "@/components/AppHeader";
 import { toast } from "sonner";
 
 const Account = () => {
