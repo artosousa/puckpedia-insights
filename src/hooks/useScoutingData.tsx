@@ -142,9 +142,15 @@ export const ScoutingDataProvider = ({ children }: { children: ReactNode }) => {
     setLeagues((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } as League : l)));
   };
 
+  const updateViewing = async (id: string, patch: Partial<Viewing>) => {
+    const { error } = await supabase.from("viewings").update(patch as any).eq("id", id);
+    if (error) throw error;
+    setViewings((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } as Viewing : v)));
+  };
+
   return (
     <ScoutingContext.Provider
-      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing, updatePlayer, updateLeague }}
+      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing, updatePlayer, updateLeague, updateViewing }}
     >
       {children}
     </ScoutingContext.Provider>
