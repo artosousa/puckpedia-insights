@@ -383,9 +383,21 @@ function MediaCard({
                 <Sparkles className="w-3 h-3" />
                 <span className="font-semibold">AI analysis</span>
               </div>
-              <button onClick={onExpand} className="text-[10px] text-primary hover:underline">
-                Expand
-              </button>
+              <div className="flex items-center gap-2">
+                {canAiAnalyze && (
+                  <button
+                    onClick={onAnalyze}
+                    disabled={analyzing}
+                    className="text-[10px] text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                    Re-analyze
+                  </button>
+                )}
+                <button onClick={onExpand} className="text-[10px] text-primary hover:underline">
+                  Expand
+                </button>
+              </div>
             </div>
             <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{parseRatings(media.ai_analysis).text}</p>
           </div>
@@ -475,9 +487,17 @@ function MediaViewerDialog({
             )}
             {media?.ai_analysis ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-1.5 text-primary">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-sm font-semibold">AI analysis</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-primary">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm font-semibold">AI analysis</span>
+                  </div>
+                  {canAiAnalyze && (
+                    <Button size="sm" variant="outline" onClick={onAnalyze} disabled={analyzing}>
+                      {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      Re-analyze
+                    </Button>
+                  )}
                 </div>
                 {ratings && <RatingsBlock ratings={ratings} />}
                 {sections.length > 0 ? (
