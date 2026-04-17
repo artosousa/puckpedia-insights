@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export type League = { id: string; name: string; abbreviation: string | null };
+export type League = { id: string; name: string; abbreviation: string | null; level: string | null };
 export type Team = { id: string; name: string; league_id: string | null };
 export type Player = {
   id: string;
@@ -15,6 +15,7 @@ export type Player = {
   weight_kg: number | null;
   jersey_number: number | null;
   team_id: string | null;
+  player_context: string | null;
   created_at: string;
 };
 export type Viewing = {
@@ -46,6 +47,8 @@ type Ctx = {
   createTeam: (name: string, league_id: string | null) => Promise<string>;
   createPlayer: (input: Omit<Player, "id" | "created_at">) => Promise<Player>;
   createViewing: (input: Omit<Viewing, "id" | "created_at">) => Promise<Viewing>;
+  updatePlayer: (id: string, patch: Partial<Player>) => Promise<void>;
+  updateLeague: (id: string, patch: Partial<League>) => Promise<void>;
 };
 
 const ScoutingContext = createContext<Ctx | null>(null);
@@ -126,9 +129,21 @@ export const ScoutingDataProvider = ({ children }: { children: ReactNode }) => {
     return data;
   };
 
+  const updatePlayer = async (id: string, patch: Partial<Player>) => {
+    const { error } = await supabase.from("players").update(patch as any).eq("id", id);
+    if (error) throw error;
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } as Player : p)));
+  };
+
+  const updateLeague = async (id: string, patch: Partial<League>) => {
+    const { error } = await supabase.from("leagues").update(patch as any).eq("id", id);
+    if (error) throw error;
+    setLeagues((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } as League : l)));
+  };
+
   return (
     <ScoutingContext.Provider
-      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing }}
+      value={{ leagues, teams, players, viewings, loading, refresh, createLeague, createTeam, createPlayer, createViewing, updatePlayer, updateLeague }}
     >
       {children}
     </ScoutingContext.Provider>

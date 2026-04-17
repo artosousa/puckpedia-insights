@@ -31,9 +31,11 @@ interface Payload {
     date_of_birth?: string | null;
     height_cm?: number | null;
     weight_kg?: number | null;
+    player_context?: string | null;
   };
   team?: string | null;
   league?: string | null;
+  level?: string | null;
   viewings: Viewing[];
 }
 
@@ -121,7 +123,7 @@ Deno.serve(async (req) => {
       return respond({ ok: false, error: "Invalid payload" });
     }
 
-    const { player, team, league, viewings } = body;
+    const { player, team, league, level, viewings } = body;
     const playerLine = `${player.first_name} ${player.last_name}` +
       (player.position ? ` · ${player.position}` : "") +
       (player.shoots ? ` · Shoots ${player.shoots}` : "") +
@@ -130,7 +132,7 @@ Deno.serve(async (req) => {
       (player.weight_kg ? ` · ${player.weight_kg}kg` : "") +
       (player.date_of_birth ? ` · DOB ${player.date_of_birth}` : "");
 
-    const orgLine = [team, league].filter(Boolean).join(" · ") || "Unaffiliated";
+    const orgLine = [team, league, level].filter(Boolean).join(" · ") || "Unaffiliated";
 
     const viewingLines = viewings.length
       ? viewings.map((v, i) => {
@@ -143,25 +145,35 @@ Deno.serve(async (req) => {
         }).join("\n\n")
       : "(no viewings logged)";
 
-    const systemPrompt = `You are a veteran amateur/junior hockey scout writing a full scouting report. Be specific, evidence-based, and reference the actual viewing notes and rating trends. Avoid generic platitudes. Write in clean markdown. Keep total length under 600 words.
+    const calibrationBlock = level
+      ? `COMPETITION LEVEL: ${level}. All ratings, language, and projections MUST be calibrated to this level. A "7" here means above average AT THIS LEVEL, not NHL-relative. Don't suggest unrealistic pro-track projections for recreational/adult-league players.`
+      : `COMPETITION LEVEL: not specified. Treat ratings as generic and note this caveat in the Summary.`;
+    const playerBgBlock = player.player_context
+      ? `PLAYER BACKGROUND: ${player.player_context}. Factor age, hockey age, and frequency of play into recommendations and tone.`
+      : "";
+
+    const systemPrompt = `You are a veteran hockey scout writing a full scouting report. Be specific, evidence-based, and reference the actual viewing notes and rating trends. Avoid generic platitudes. Write in clean markdown. Keep total length under 600 words.
+
+${calibrationBlock}
+${playerBgBlock}
 
 Use this exact structure:
 ## Summary
-1–2 sentence overview of the player.
+1–2 sentence overview of the player AT THEIR LEVEL.
 
 ## Skating
 ## Shot
 ## Hands
 ## Hockey IQ
 ## Compete & Physicality
-For each tool: cite avg rating, the trend across viewings, and what the notes reveal.
+For each tool: cite avg rating, the trend across viewings, and what the notes reveal. Frame everything relative to the player's level.
 
 ## Strengths
 ## Areas to Develop
-Bullet list, 3–5 items each.
+Bullet list, 3–5 items each. Recommendations should be appropriate for the player's level and background.
 
 ## Projection
-Based on the projection field consensus + ratings.
+Based on the projection field consensus + ratings + LEVEL. For recreational players, frame as "next-level rec/beer-league development" rather than pro-track.
 
 ## Recommendation
 Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale.`;

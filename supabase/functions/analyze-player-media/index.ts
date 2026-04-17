@@ -5,7 +5,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are an expert hockey scout and skills coach analyzing visual media of a player.
+function buildSystemPrompt(level: string | null, playerContext: string | null) {
+  const levelLine = level
+    ? `COMPETITION LEVEL: ${level}. Calibrate everything (ratings, language, expectations) to peers AT THIS LEVEL. A "7" means above average for this level — NOT NHL-relative. Do not project to higher levels unless explicitly asked.`
+    : `COMPETITION LEVEL: not specified. Note in your analysis that calibration is generic and ratings should be interpreted loosely.`;
+  const ctxLine = playerContext
+    ? `PLAYER BACKGROUND: ${playerContext}. Factor this in (age, hockey age, frequency of play) when assessing strengths/weaknesses and recommending drills appropriate for this player.`
+    : "";
+  return `You are an expert hockey scout and skills coach analyzing visual media of a player.
+
+${levelLine}
+${ctxLine}
+
 Look at the photo or video frames and provide a concise scouting analysis focused on:
 - Skating mechanics (stride, edges, balance, posture)
 - Stick & puck handling (hand position, blade angle, body posture)
@@ -17,18 +28,19 @@ Be specific about what you actually see. If the image quality or angle limits wh
 Format your response in EXACTLY three sections using these headings on their own lines:
 
 Observations
-- 3–6 short bullets describing what you see (strengths and neutral observations).
+- 3–6 short bullets describing what you see (strengths and neutral observations FOR THIS LEVEL).
 
 Areas to Improve
-- 3–5 short, actionable bullets identifying specific weaknesses or things the player should work on, based on what is visible. If the media is too limited to assess a weakness, say "Limited visibility — cannot assess" as one of the bullets.
+- 3–5 short, actionable bullets identifying specific weaknesses or things the player should work on, based on what is visible AND appropriate for their level/background. If the media is too limited to assess a weakness, say "Limited visibility — cannot assess" as one of the bullets.
 
 Recommended Resources
 - For EACH "Areas to Improve" bullet above, provide one matching resource on its own line in this exact format:
   - <Area>: <Drill or technique name> — <one-sentence description>. Search: "<YouTube search query>"
-- Use well-known hockey development drills/concepts (e.g., "Russian Box edge work", "Tight-turn figure 8s", "Wall battle leverage drill", "Heel-to-heel pivots", "Stickhandling triangle", "Shoulder-check scan reps").
+- Pick drills appropriate for the player's level (e.g., a beer-league adult shouldn't be told to do pro-level edge work).
 - Keep each resource line under 220 characters.
 
 No preamble. Use only the three headings above. Bullets start with "- ".`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -86,6 +98,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch player + league context for level calibration
+    let level: string | null = null;
+    let playerContext: string | null = null;
+    try {
+      const { data: pl } = await admin
+        .from("players")
+        .select("player_context, team_id")
+        .eq("id", media.player_id)
+        .maybeSingle();
+      playerContext = pl?.player_context ?? null;
+      if (pl?.team_id) {
+        const { data: tm } = await admin
+          .from("teams")
+          .select("league_id")
+          .eq("id", pl.team_id)
+          .maybeSingle();
+        if (tm?.league_id) {
+          const { data: lg } = await admin
+            .from("leagues")
+            .select("level")
+            .eq("id", tm.league_id)
+            .maybeSingle();
+          level = lg?.level ?? null;
+        }
+      }
+    } catch (e) {
+      console.error("context fetch failed", e);
+    }
+
+    const SYSTEM_PROMPT = buildSystemPrompt(level, playerContext);
+
     const { data: fileBlob, error: dlErr } = await admin.storage
       .from("player-media")
       .download(media.storage_path);
@@ -102,7 +145,12 @@ Deno.serve(async (req) => {
     const mime = media.mime_type || (media.kind === "photo" ? "image/jpeg" : "video/mp4");
     const dataUrl = `data:${mime};base64,${b64}`;
 
-    const userText = `Scouting context — tags: ${(media.tags ?? []).join(", ") || "none"}.${
+    const contextHeader = [
+      level ? `Level: ${level}` : null,
+      playerContext ? `Player background: ${playerContext}` : null,
+    ].filter(Boolean).join(" | ");
+
+    const userText = `${contextHeader ? contextHeader + "\n" : ""}Tags: ${(media.tags ?? []).join(", ") || "none"}.${
       media.notes ? ` Notes: ${media.notes}` : ""
     } Analyze this ${media.kind}.`;
 
@@ -185,7 +233,7 @@ Deno.serve(async (req) => {
             {
               role: "system",
               content:
-                "You are a hockey scout. Rate the player on Skating, Shot, Hands, IQ, Compete, and Physicality on a 1-10 scale (10 = NHL-ready) based ONLY on what is visible in the media. Use null for any metric you cannot assess from this clip. Be honest and conservative — short clips rarely justify high confidence.",
+                `You are a hockey scout. Rate the player on Skating, Shot, Hands, IQ, Compete, and Physicality on a 1-10 scale based ONLY on what is visible in the media. ${level ? `IMPORTANT: Calibrate ratings RELATIVE TO PEERS at this level: "${level}". A "10" = elite for this level (not NHL-relative). A "5" = average for this level.` : "Without a known level, use a generic scale where 10 = NHL-ready and 5 = average junior — and lean conservative."} ${playerContext ? `Player background: ${playerContext}.` : ""} Use null for any metric you cannot assess from this clip. Be honest — short clips rarely justify high confidence.`,
             },
             {
               role: "user",

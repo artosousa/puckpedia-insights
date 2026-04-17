@@ -21,6 +21,7 @@ import ReactMarkdown from "react-markdown";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { PlayerMediaPanel } from "@/components/PlayerMediaPanel";
+import { ScoutingContextCard } from "@/components/ScoutingContextCard";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -112,9 +113,11 @@ const PlayerProfile = () => {
             date_of_birth: player.date_of_birth,
             height_cm: player.height_cm,
             weight_kg: player.weight_kg,
+            player_context: player.player_context,
           },
           team: team?.name ?? null,
           league: league?.name ?? null,
+          level: league?.level ?? null,
           viewings: playerViewings.map((v) => ({
             game_date: v.game_date,
             opponent: v.opponent,
@@ -204,6 +207,7 @@ const PlayerProfile = () => {
                 <h1 className="font-heading text-2xl font-bold truncate">{player.first_name} {player.last_name}</h1>
                 <p className="text-sm text-muted-foreground">
                   {team?.name ?? "No team"}{league ? ` · ${league.name}` : ""}
+                  {league?.level ? ` · ${league.level}` : ""}
                   {player.shoots ? ` · Shoots ${player.shoots}` : ""}
                   {player.jersey_number ? ` · #${player.jersey_number}` : ""}
                 </p>
@@ -262,6 +266,8 @@ const PlayerProfile = () => {
             <p className="font-heading text-2xl font-bold">{player.weight_kg ? `${player.weight_kg}kg` : "—"}</p>
           </div>
         </div>
+
+        <ScoutingContextCard player={player} league={league ?? null} />
 
         {playerViewings.length === 0 ? (
           <div className="glass-card rounded-xl p-12 text-center">
