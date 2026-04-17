@@ -238,28 +238,15 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
     const playerIdForRow = body.player_id ?? "00000000-0000-0000-0000-000000000000";
     const nowIso = new Date().toISOString();
 
-    // Persist the latest report text (one row per player — replace on regenerate).
-    // Older rows for this player keep counting against the monthly cap as audit trail.
-    const { data: existing } = await admin
+    // Clear previous latest report text for this player (audit rows stay as usage counters)
+    await admin
       .from("ai_reports")
-      .select("id")
+      .update({ report_text: null })
       .eq("user_id", user.id)
       .eq("player_id", playerIdForRow)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .not("report_text", "is", null);
 
-    if (existing?.id) {
-      // Insert a fresh counter row (no text) so monthly usage increments...
-      await admin.from("ai_reports").insert({ user_id: user.id, player_id: playerIdForRow });
-      // ...then overwrite the previous "latest" row with the new text.
-      await admin
-        .from("ai_reports")
-        .update({ report_text: null })
-        .eq("id", existing.id);
-    }
-
-    // Insert the new "latest" row carrying the report text.
+    // Insert the new "latest" row carrying the report text (also counts as 1 usage tick)
     await admin.from("ai_reports").insert({
       user_id: user.id,
       player_id: playerIdForRow,
@@ -272,7 +259,7 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
       ok: true,
       report,
       generated_at: nowIso,
-      used: used + (existing ? 2 : 1),
+      used: used + 1,
       limit: isFinite(limit) ? limit : null,
     });
   } catch (e) {
