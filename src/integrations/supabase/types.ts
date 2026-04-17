@@ -59,6 +59,75 @@ export type Database = {
         }
         Relationships: []
       }
+      player_media: {
+        Row: {
+          ai_analysis: string | null
+          ai_analyzed_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          kind: string
+          mime_type: string | null
+          notes: string | null
+          player_id: string
+          size_bytes: number | null
+          storage_path: string
+          tags: string[]
+          updated_at: string
+          user_id: string
+          viewing_id: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          ai_analyzed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          notes?: string | null
+          player_id: string
+          size_bytes?: number | null
+          storage_path: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+          viewing_id?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          ai_analyzed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          notes?: string | null
+          player_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+          viewing_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_media_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_media_viewing_id_fkey"
+            columns: ["viewing_id"]
+            isOneToOne: false
+            referencedRelation: "viewings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           created_at: string
