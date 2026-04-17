@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_reports: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       leagues: {
         Row: {
           abbreviation: string | null
