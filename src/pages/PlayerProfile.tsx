@@ -454,18 +454,42 @@ const PlayerProfile = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="glass-card rounded-xl p-6">
                 <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                  Projection Mix
+                  <ShieldCheck className="w-4 h-4 text-primary" />
+                  Scout Confidence
                 </h3>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={projectionData} dataKey="value" nameKey="name" outerRadius={70} innerRadius={40}>
-                      {projectionData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--surface-elevated))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="flex flex-col items-center justify-center text-center py-2">
+                  <div
+                    className={`w-28 h-28 rounded-full border-4 flex items-center justify-center mb-3 ${
+                      confidenceResult.level === "high"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : confidenceResult.level === "medium"
+                        ? "border-amber-500/60 bg-amber-500/10 text-amber-400"
+                        : "border-border bg-muted/30 text-muted-foreground"
+                    }`}
+                  >
+                    <div>
+                      <p className="font-heading text-3xl font-bold leading-none">{confidenceResult.score}</p>
+                      <p className="text-[10px] uppercase tracking-wider mt-1 opacity-80">/ 100</p>
+                    </div>
+                  </div>
+                  <p
+                    className={`text-xs px-3 py-1 rounded-full border font-semibold uppercase tracking-wide mb-3 ${
+                      confidenceResult.level === "high"
+                        ? "bg-primary/15 text-primary border-primary/40"
+                        : confidenceResult.level === "medium"
+                        ? "bg-amber-500/15 text-amber-300 border-amber-500/40"
+                        : "bg-muted/40 text-muted-foreground border-border"
+                    }`}
+                  >
+                    {confidenceResult.level}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
+                    {confidenceResult.reason}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-3 leading-relaxed max-w-[240px]">
+                    Auto-calculated from viewings + AI clip ratings. More evidence and consistent ratings raise confidence.
+                  </p>
+                </div>
               </div>
 
               <div className="glass-card rounded-xl p-6 lg:col-span-2">
