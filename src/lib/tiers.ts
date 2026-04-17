@@ -6,6 +6,7 @@ export interface Tier {
   tagline: string;
   playerLimit: number; // Infinity for unlimited
   aiReports: boolean;
+  aiReportsPerMonth: number; // 0 = none, Infinity = unlimited
   monthly: { priceId: string; amount: number } | null; // null for free
   yearly: { priceId: string; amount: number } | null;
   highlighted?: boolean;
@@ -18,6 +19,7 @@ export const TIERS: Tier[] = [
     tagline: "Get on the ice. Free forever.",
     playerLimit: 10,
     aiReports: false,
+    aiReportsPerMonth: 0,
     monthly: null,
     yearly: null,
   },
@@ -27,6 +29,7 @@ export const TIERS: Tier[] = [
     tagline: "For scouts tracking a small list.",
     playerLimit: 25,
     aiReports: false,
+    aiReportsPerMonth: 0,
     monthly: { priceId: "junior_monthly", amount: 9 },
     yearly: { priceId: "junior_yearly", amount: 90 },
   },
@@ -35,7 +38,8 @@ export const TIERS: Tier[] = [
     name: "Minor",
     tagline: "For active regional scouts.",
     playerLimit: 50,
-    aiReports: false,
+    aiReports: true,
+    aiReportsPerMonth: 10,
     monthly: { priceId: "minor_monthly", amount: 19 },
     yearly: { priceId: "minor_yearly", amount: 190 },
     highlighted: true,
@@ -43,9 +47,10 @@ export const TIERS: Tier[] = [
   {
     id: "pro",
     name: "Pro",
-    tagline: "Unlimited players + AI scouting reports.",
+    tagline: "Unlimited players + unlimited AI reports.",
     playerLimit: Infinity,
     aiReports: true,
+    aiReportsPerMonth: Infinity,
     monthly: { priceId: "pro_monthly", amount: 39 },
     yearly: { priceId: "pro_yearly", amount: 390 },
   },
@@ -56,3 +61,9 @@ export const TIER_BY_ID: Record<TierId, Tier> = Object.fromEntries(
 ) as Record<TierId, Tier>;
 
 export const FREE_TIER: Tier = TIERS[0];
+
+export function aiReportsLimitLabel(tier: Tier): string {
+  if (tier.aiReportsPerMonth === 0) return "Not included";
+  if (!isFinite(tier.aiReportsPerMonth)) return "Unlimited";
+  return `${tier.aiReportsPerMonth} / month`;
+}
