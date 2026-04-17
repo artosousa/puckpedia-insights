@@ -15,6 +15,7 @@ import {
   getVideoDuration,
   listPlayerMedia,
   setMediaAnalysis,
+  updateMediaMeta,
   uploadPlayerMedia,
   type PlayerMedia,
 } from "@/lib/playerMedia";
