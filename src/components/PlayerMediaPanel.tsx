@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2 } from "lucide-react";
+import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2, Crop } from "lucide-react";
+import { TrackedVideo } from "@/components/TrackedVideo";
+import { VideoEditorDialog } from "@/components/VideoEditorDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
