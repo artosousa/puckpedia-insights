@@ -207,6 +207,7 @@ const PlayerProfile = () => {
                 <h1 className="font-heading text-2xl font-bold truncate">{player.first_name} {player.last_name}</h1>
                 <p className="text-sm text-muted-foreground">
                   {team?.name ?? "No team"}{league ? ` · ${league.name}` : ""}
+                  {league?.level ? ` · ${league.level}` : ""}
                   {player.shoots ? ` · Shoots ${player.shoots}` : ""}
                   {player.jersey_number ? ` · #${player.jersey_number}` : ""}
                 </p>
