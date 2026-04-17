@@ -15,7 +15,7 @@ export interface Tier {
 export const TIERS: Tier[] = [
   {
     id: "peewee",
-    name: "4th Line",
+    name: "Healthy Scratch",
     tagline: "Get on the ice. Free forever.",
     playerLimit: 10,
     aiReports: false,
