@@ -235,16 +235,44 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
       return respond({ ok: false, error: "AI returned an empty report. Try again." });
     }
 
-    if (body.player_id) {
-      await admin.from("ai_reports").insert({ user_id: user.id, player_id: body.player_id });
-    } else {
-      await admin.from("ai_reports").insert({ user_id: user.id, player_id: "00000000-0000-0000-0000-000000000000" });
+    const playerIdForRow = body.player_id ?? "00000000-0000-0000-0000-000000000000";
+    const nowIso = new Date().toISOString();
+
+    // Persist the latest report text (one row per player — replace on regenerate).
+    // Older rows for this player keep counting against the monthly cap as audit trail.
+    const { data: existing } = await admin
+      .from("ai_reports")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("player_id", playerIdForRow)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      // Insert a fresh counter row (no text) so monthly usage increments...
+      await admin.from("ai_reports").insert({ user_id: user.id, player_id: playerIdForRow });
+      // ...then overwrite the previous "latest" row with the new text.
+      await admin
+        .from("ai_reports")
+        .update({ report_text: null })
+        .eq("id", existing.id);
     }
+
+    // Insert the new "latest" row carrying the report text.
+    await admin.from("ai_reports").insert({
+      user_id: user.id,
+      player_id: playerIdForRow,
+      report_text: report,
+      model: "google/gemini-2.5-flash",
+      updated_at: nowIso,
+    });
 
     return respond({
       ok: true,
       report,
-      used: used + 1,
+      generated_at: nowIso,
+      used: used + (existing ? 2 : 1),
       limit: isFinite(limit) ? limit : null,
     });
   } catch (e) {
