@@ -2,6 +2,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type MediaKind = "photo" | "video";
 
+export interface TrackKeyframe {
+  /** time in seconds (absolute, source video) */
+  t: number;
+  /** crop rect in normalized 0..1 coords (centerX, centerY, width, height) */
+  cx: number;
+  cy: number;
+  w: number;
+  h: number;
+}
+
+export interface MediaEdit {
+  /** trim in/out in seconds (absolute, source video) */
+  trim?: { in: number; out: number } | null;
+  /** keyframes for tracking the player; interpolated linearly between */
+  track?: TrackKeyframe[];
+}
+
 export interface PlayerMedia {
   id: string;
   user_id: string;
@@ -16,6 +33,7 @@ export interface PlayerMedia {
   notes: string | null;
   ai_analysis: string | null;
   ai_analyzed_at: string | null;
+  edit: MediaEdit | null;
   created_at: string;
 }
 
@@ -108,4 +126,36 @@ export async function setMediaAnalysis(id: string, analysis: string): Promise<vo
     .update({ ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
+}
+
+export async function updateMediaEdit(id: string, edit: MediaEdit | null): Promise<void> {
+  const { error } = await supabase
+    .from("player_media" as any)
+    .update({ edit })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Linearly interpolate a tracking rect at time `t`. Returns null when no keyframes. */
+export function rectAtTime(track: TrackKeyframe[] | undefined | null, t: number): TrackKeyframe | null {
+  if (!track || track.length === 0) return null;
+  const sorted = [...track].sort((a, b) => a.t - b.t);
+  if (t <= sorted[0].t) return sorted[0];
+  if (t >= sorted[sorted.length - 1].t) return sorted[sorted.length - 1];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const a = sorted[i];
+    const b = sorted[i + 1];
+    if (t >= a.t && t <= b.t) {
+      const span = b.t - a.t || 1;
+      const k = (t - a.t) / span;
+      return {
+        t,
+        cx: a.cx + (b.cx - a.cx) * k,
+        cy: a.cy + (b.cy - a.cy) * k,
+        w: a.w + (b.w - a.w) * k,
+        h: a.h + (b.h - a.h) * k,
+      };
+    }
+  }
+  return sorted[sorted.length - 1];
 }

@@ -68,6 +68,7 @@ export type Database = {
           ai_analyzed_at: string | null
           created_at: string
           duration_seconds: number | null
+          edit: Json | null
           id: string
           kind: string
           mime_type: string | null
@@ -85,6 +86,7 @@ export type Database = {
           ai_analyzed_at?: string | null
           created_at?: string
           duration_seconds?: number | null
+          edit?: Json | null
           id?: string
           kind: string
           mime_type?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           ai_analyzed_at?: string | null
           created_at?: string
           duration_seconds?: number | null
+          edit?: Json | null
           id?: string
           kind?: string
           mime_type?: string | null

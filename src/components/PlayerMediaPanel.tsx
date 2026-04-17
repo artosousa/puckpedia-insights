@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2 } from "lucide-react";
+import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2, Crop } from "lucide-react";
+import { TrackedVideo } from "@/components/TrackedVideo";
+import { VideoEditorDialog } from "@/components/VideoEditorDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +41,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [customTag, setCustomTag] = useState("");
   const [notes, setNotes] = useState("");
   const [expanded, setExpanded] = useState<PlayerMedia | null>(null);
+  const [editing, setEditing] = useState<PlayerMedia | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -281,10 +284,19 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
               analyzing={analyzingId === m.id}
               canAiAnalyze={caps.canAiAnalyze}
               onExpand={() => setExpanded(m)}
+              onEdit={() => setEditing(m)}
             />
           ))}
         </div>
       )}
+
+      <VideoEditorDialog
+        media={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(edit) => {
+          setItems((prev) => prev.map((x) => (editing && x.id === editing.id ? { ...x, edit } : x)));
+        }}
+      />
 
       <MediaViewerDialog
         media={expanded}
@@ -304,6 +316,7 @@ function MediaCard({
   analyzing,
   canAiAnalyze,
   onExpand,
+  onEdit,
 }: {
   media: PlayerMedia;
   onDelete: () => void;
@@ -311,6 +324,7 @@ function MediaCard({
   analyzing: boolean;
   canAiAnalyze: boolean;
   onExpand: () => void;
+  onEdit: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
 
@@ -329,7 +343,7 @@ function MediaCard({
           media.kind === "photo" ? (
             <img src={url} alt="" className="w-full h-full object-cover cursor-zoom-in" onClick={onExpand} />
           ) : (
-            <video src={url} controls className="w-full h-full object-contain" />
+            <TrackedVideo src={url} edit={media.edit} className="w-full h-full" />
           )
         ) : (
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -348,8 +362,19 @@ function MediaCard({
             {media.kind === "photo" ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
             {media.kind}
             {media.duration_seconds ? ` · ${Math.round(media.duration_seconds)}s` : ""}
+            {media.edit?.trim || (media.edit?.track && media.edit.track.length > 0) ? " · edited" : ""}
           </span>
           <div className="flex items-center gap-2">
+            {media.kind === "video" && (
+              <button
+                onClick={onEdit}
+                className="text-muted-foreground hover:text-primary transition"
+                aria-label="Edit clip"
+                title="Trim & track"
+              >
+                <Crop className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               onClick={onExpand}
               className="text-muted-foreground hover:text-primary transition"
@@ -464,7 +489,7 @@ function MediaViewerDialog({
               media.kind === "photo" ? (
                 <img src={url} alt="" className="max-w-full max-h-[80vh] object-contain" />
               ) : (
-                <video src={url} controls autoPlay className="max-w-full max-h-[80vh]" />
+                <TrackedVideo src={url} edit={media.edit} autoPlay className="max-w-full max-h-[80vh] w-full" />
               )
             ) : (
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
