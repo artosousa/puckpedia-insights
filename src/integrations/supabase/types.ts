@@ -40,6 +40,7 @@ export type Database = {
           abbreviation: string | null
           created_at: string
           id: string
+          level: string | null
           name: string
           user_id: string
         }
@@ -47,6 +48,7 @@ export type Database = {
           abbreviation?: string | null
           created_at?: string
           id?: string
+          level?: string | null
           name: string
           user_id?: string
         }
@@ -54,6 +56,7 @@ export type Database = {
           abbreviation?: string | null
           created_at?: string
           id?: string
+          level?: string | null
           name?: string
           user_id?: string
         }
@@ -137,6 +140,7 @@ export type Database = {
           id: string
           jersey_number: number | null
           last_name: string
+          player_context: string | null
           position: string | null
           shoots: string | null
           team_id: string | null
@@ -152,6 +156,7 @@ export type Database = {
           id?: string
           jersey_number?: number | null
           last_name: string
+          player_context?: string | null
           position?: string | null
           shoots?: string | null
           team_id?: string | null
@@ -167,6 +172,7 @@ export type Database = {
           id?: string
           jersey_number?: number | null
           last_name?: string
+          player_context?: string | null
           position?: string | null
           shoots?: string | null
           team_id?: string | null
