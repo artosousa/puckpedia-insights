@@ -63,6 +63,9 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
     if (!v) return;
     const d = isFinite(v.duration) ? v.duration : 0;
     setDuration(d);
+    if (v.videoWidth && v.videoHeight) {
+      setVideoAspect(v.videoWidth / v.videoHeight);
+    }
     const e = (media?.edit ?? {}) as MediaEdit;
     if (!e.trim) {
       setTrimIn(0);
