@@ -19,7 +19,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
-  const { tier } = useSubscription();
+  const { tier, aiReportsThisMonth, aiReportsRemaining } = useSubscription();
   const [searchQuery, setSearchQuery] = useState("");
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
