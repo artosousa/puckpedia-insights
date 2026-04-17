@@ -387,7 +387,7 @@ function MediaCard({
                 Expand
               </button>
             </div>
-            <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{media.ai_analysis}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{parseRatings(media.ai_analysis).text}</p>
           </div>
         ) : (
           canAiAnalyze && (
@@ -429,7 +429,8 @@ function MediaViewerDialog({
     return () => { cancelled = true; };
   }, [media?.storage_path]);
 
-  const sections = parseAnalysis(media?.ai_analysis ?? "");
+  const { ratings, text: analysisText } = parseRatings(media?.ai_analysis ?? "");
+  const sections = parseAnalysis(analysisText);
 
   return (
     <Dialog open={!!media} onOpenChange={(o) => !o && onClose()}>
@@ -478,6 +479,7 @@ function MediaViewerDialog({
                   <Sparkles className="w-4 h-4" />
                   <span className="text-sm font-semibold">AI analysis</span>
                 </div>
+                {ratings && <RatingsBlock ratings={ratings} />}
                 {sections.length > 0 ? (
                   sections.map((s) => (
                     <div key={s.heading} className="rounded-lg border border-border/50 bg-background/60 p-3">
@@ -488,7 +490,7 @@ function MediaViewerDialog({
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{media.ai_analysis}</p>
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{analysisText}</p>
                 )}
               </div>
             ) : (
@@ -503,6 +505,71 @@ function MediaViewerDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type AiRatings = {
+  skating: number | null;
+  shot: number | null;
+  hands: number | null;
+  iq: number | null;
+  compete: number | null;
+  physicality: number | null;
+  confidence?: "low" | "medium" | "high";
+};
+
+function parseRatings(text: string): { ratings: AiRatings | null; text: string } {
+  if (!text) return { ratings: null, text };
+  const m = text.match(/^<<RATINGS>>(.*?)<<END>>\n?/s);
+  if (!m) return { ratings: null, text };
+  try {
+    const ratings = JSON.parse(m[1]) as AiRatings;
+    return { ratings, text: text.slice(m[0].length) };
+  } catch {
+    return { ratings: null, text };
+  }
+}
+
+function RatingsBlock({ ratings }: { ratings: AiRatings }) {
+  const rows: { key: keyof AiRatings; label: string }[] = [
+    { key: "skating", label: "Skating" },
+    { key: "shot", label: "Shot" },
+    { key: "hands", label: "Hands" },
+    { key: "iq", label: "IQ" },
+    { key: "compete", label: "Compete" },
+    { key: "physicality", label: "Physicality" },
+  ];
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-foreground">AI ratings (1–10)</p>
+        {ratings.confidence && (
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Confidence: <span className="text-primary">{ratings.confidence}</span>
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-1 gap-1.5">
+        {rows.map(({ key, label }) => {
+          const v = ratings[key] as number | null;
+          const pct = typeof v === "number" ? Math.max(0, Math.min(100, v * 10)) : 0;
+          return (
+            <div key={key} className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-20 shrink-0">{label}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-background/80 overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-xs font-mono w-8 text-right text-foreground">
+                {typeof v === "number" ? v.toFixed(0) : "—"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

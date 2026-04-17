@@ -106,6 +106,28 @@ Deno.serve(async (req) => {
       media.notes ? ` Notes: ${media.notes}` : ""
     } Analyze this ${media.kind}.`;
 
+    const ratingTool = {
+      type: "function",
+      function: {
+        name: "rate_player",
+        description: "Rate the player on the six core scouting metrics on a 1-10 scale based ONLY on what is visible in the media. Use null for any metric not assessable from the clip.",
+        parameters: {
+          type: "object",
+          properties: {
+            skating: { type: ["integer", "null"], minimum: 1, maximum: 10 },
+            shot: { type: ["integer", "null"], minimum: 1, maximum: 10 },
+            hands: { type: ["integer", "null"], minimum: 1, maximum: 10 },
+            iq: { type: ["integer", "null"], minimum: 1, maximum: 10 },
+            compete: { type: ["integer", "null"], minimum: 1, maximum: 10 },
+            physicality: { type: ["integer", "null"], minimum: 1, maximum: 10 },
+            confidence: { type: "string", enum: ["low", "medium", "high"], description: "Overall confidence in these ratings given clip quality/length." },
+          },
+          required: ["skating", "shot", "hands", "iq", "compete", "physicality", "confidence"],
+          additionalProperties: false,
+        },
+      },
+    };
+
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -146,14 +168,62 @@ Deno.serve(async (req) => {
     }
 
     const aiJson = await aiResp.json();
-    const analysis = aiJson?.choices?.[0]?.message?.content ?? "";
+    const analysisText = aiJson?.choices?.[0]?.message?.content ?? "";
+
+    // Second call: structured ratings via tool calling
+    let ratings: Record<string, unknown> | null = null;
+    try {
+      const ratingResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-pro",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a hockey scout. Rate the player on Skating, Shot, Hands, IQ, Compete, and Physicality on a 1-10 scale (10 = NHL-ready) based ONLY on what is visible in the media. Use null for any metric you cannot assess from this clip. Be honest and conservative — short clips rarely justify high confidence.",
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: `Context — tags: ${(media.tags ?? []).join(", ") || "none"}.${media.notes ? ` Notes: ${media.notes}` : ""} Your prior written analysis:\n\n${analysisText}` },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            },
+          ],
+          tools: [ratingTool],
+          tool_choice: { type: "function", function: { name: "rate_player" } },
+        }),
+      });
+
+      if (ratingResp.ok) {
+        const ratingJson = await ratingResp.json();
+        const call = ratingJson?.choices?.[0]?.message?.tool_calls?.[0];
+        if (call?.function?.arguments) {
+          ratings = JSON.parse(call.function.arguments);
+        }
+      } else {
+        console.error("rating call non-ok", ratingResp.status, await ratingResp.text());
+      }
+    } catch (e) {
+      console.error("rating call failed", e);
+    }
+
+    // Persist as a single text blob: ratings JSON block + written analysis
+    const combined = ratings
+      ? `<<RATINGS>>${JSON.stringify(ratings)}<<END>>\n${analysisText}`
+      : analysisText;
 
     await admin
       .from("player_media")
-      .update({ ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() })
+      .update({ ai_analysis: combined, ai_analyzed_at: new Date().toISOString() })
       .eq("id", media_id);
 
-    return new Response(JSON.stringify({ analysis }), {
+    return new Response(JSON.stringify({ analysis: combined, ratings }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
