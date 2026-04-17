@@ -260,7 +260,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
               : "Upload photos or videos"}
           </span>
           <span className="text-xs text-muted-foreground">
-            {dragActive ? "Release to add files" : "Drag &amp; drop or click to browse · tags added after upload"}
+            {dragActive ? "Release to add files" : "Drag & drop or click to browse · tags added after upload"}
           </span>
         </div>
       )}
