@@ -41,6 +41,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [customTag, setCustomTag] = useState("");
   const [notes, setNotes] = useState("");
   const [expanded, setExpanded] = useState<PlayerMedia | null>(null);
+  const [editing, setEditing] = useState<PlayerMedia | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
