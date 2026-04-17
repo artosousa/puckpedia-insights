@@ -630,6 +630,7 @@ function CompactRatings({ ratings }: { ratings: AiRatings }) {
 }
 
 
+function parseAnalysisSections(text: string): { heading: string; body: string }[] {
   if (!text) return [];
   const known = ["Observations", "Areas to Improve", "Recommended Resources"];
   const lines = text.split("\n");
