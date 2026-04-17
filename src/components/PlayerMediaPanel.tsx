@@ -316,6 +316,7 @@ function MediaCard({
   analyzing,
   canAiAnalyze,
   onExpand,
+  onEdit,
 }: {
   media: PlayerMedia;
   onDelete: () => void;
@@ -323,6 +324,7 @@ function MediaCard({
   analyzing: boolean;
   canAiAnalyze: boolean;
   onExpand: () => void;
+  onEdit: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
 
@@ -341,7 +343,7 @@ function MediaCard({
           media.kind === "photo" ? (
             <img src={url} alt="" className="w-full h-full object-cover cursor-zoom-in" onClick={onExpand} />
           ) : (
-            <video src={url} controls className="w-full h-full object-contain" />
+            <TrackedVideo src={url} edit={media.edit} className="w-full h-full" />
           )
         ) : (
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
