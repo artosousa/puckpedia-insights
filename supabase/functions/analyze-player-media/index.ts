@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are an expert hockey scout analyzing visual media of a player.
+const SYSTEM_PROMPT = `You are an expert hockey scout and skills coach analyzing visual media of a player.
 Look at the photo or video frames and provide a concise scouting analysis focused on:
 - Skating mechanics (stride, edges, balance, posture)
 - Stick & puck handling (hand position, blade angle, body posture)
@@ -14,7 +14,7 @@ Look at the photo or video frames and provide a concise scouting analysis focuse
 
 Be specific about what you actually see. If the image quality or angle limits what you can assess, say so.
 
-Format your response in EXACTLY two sections using these headings on their own lines:
+Format your response in EXACTLY three sections using these headings on their own lines:
 
 Observations
 - 3–6 short bullets describing what you see (strengths and neutral observations).
@@ -22,7 +22,13 @@ Observations
 Areas to Improve
 - 3–5 short, actionable bullets identifying specific weaknesses or things the player should work on, based on what is visible. If the media is too limited to assess a weakness, say "Limited visibility — cannot assess" as one of the bullets.
 
-No preamble. Use only the two headings above. Bullets start with "- ".`;
+Recommended Resources
+- For EACH "Areas to Improve" bullet above, provide one matching resource on its own line in this exact format:
+  - <Area>: <Drill or technique name> — <one-sentence description>. Search: "<YouTube search query>"
+- Use well-known hockey development drills/concepts (e.g., "Russian Box edge work", "Tight-turn figure 8s", "Wall battle leverage drill", "Heel-to-heel pivots", "Stickhandling triangle", "Shoulder-check scan reps").
+- Keep each resource line under 220 characters.
+
+No preamble. Use only the three headings above. Bullets start with "- ".`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
