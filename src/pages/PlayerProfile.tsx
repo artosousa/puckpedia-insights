@@ -24,6 +24,8 @@ import { PlayerMediaPanel } from "@/components/PlayerMediaPanel";
 import { ScoutingContextCard } from "@/components/ScoutingContextCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AiRatingSuggestions } from "@/components/AiRatingSuggestions";
+import { computeScoutConfidence } from "@/lib/scoutConfidence";
+import { useScoutingData as _scd } from "@/hooks/useScoutingData";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
