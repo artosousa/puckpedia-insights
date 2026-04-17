@@ -22,6 +22,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { PlayerMediaPanel } from "@/components/PlayerMediaPanel";
 import { ScoutingContextCard } from "@/components/ScoutingContextCard";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -380,30 +381,81 @@ const PlayerProfile = () => {
 
               <div className="glass-card rounded-xl p-6 lg:col-span-2">
                 <h3 className="font-heading text-base font-semibold mb-4">Viewing Log</h3>
-                <div className="space-y-2">
-                  {[...playerViewings].reverse().map((v) => (
-                    <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-surface-sunken">
-                      <div>
-                        <p className="text-sm font-medium">
-                          {new Date(v.game_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                          {v.opponent ? ` vs ${v.opponent}` : ""}
-                        </p>
-                        {v.notes && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{v.notes}</p>}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {v.projection && <span className="text-xs text-muted-foreground">{v.projection}</span>}
-                        <span className="font-heading text-sm font-bold text-primary">{v.rating_overall ?? "—"}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Accordion type="multiple" className="space-y-2">
+                  {[...playerViewings].reverse().map((v) => {
+                    const ratingRows: { label: string; value: number | null }[] = [
+                      { label: "Skating", value: v.rating_skating },
+                      { label: "Shot", value: v.rating_shot },
+                      { label: "Hands", value: v.rating_hands },
+                      { label: "IQ", value: v.rating_iq },
+                      { label: "Compete", value: v.rating_compete },
+                      { label: "Physicality", value: v.rating_physicality },
+                    ];
+                    return (
+                      <AccordionItem
+                        key={v.id}
+                        value={v.id}
+                        className="border border-border/50 rounded-lg bg-surface-sunken overflow-hidden data-[state=open]:bg-surface-sunken/60"
+                      >
+                        <AccordionTrigger className="px-3 py-3 hover:no-underline">
+                          <div className="flex items-center justify-between gap-3 w-full pr-2">
+                            <div className="text-left min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {new Date(v.game_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                                {v.opponent ? ` vs ${v.opponent}` : ""}
+                                {v.location ? ` · ${v.location}` : ""}
+                              </p>
+                              {v.notes && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{v.notes}</p>}
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              {v.projection && <span className="text-xs text-muted-foreground hidden sm:inline">{v.projection}</span>}
+                              <span className="font-heading text-sm font-bold text-primary">{v.rating_overall ?? "—"}</span>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3 pb-4">
+                          <div className="space-y-4 pt-1">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {ratingRows.map((r) => (
+                                <div key={r.label} className="flex items-center justify-between rounded-md bg-background/40 px-2.5 py-1.5">
+                                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{r.label}</span>
+                                  <span className="font-mono text-xs text-foreground">{r.value ?? "—"}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {v.projection && (
+                              <p className="text-xs">
+                                <span className="text-muted-foreground">Projection: </span>
+                                <span className="text-foreground font-medium">{v.projection}</span>
+                              </p>
+                            )}
+                            {v.notes && (
+                              <div>
+                                <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Notes</p>
+                                <p className="text-sm text-foreground whitespace-pre-wrap">{v.notes}</p>
+                              </div>
+                            )}
+                            <div className="pt-1">
+                              <PlayerMediaPanel
+                                playerId={player.id}
+                                viewingId={v.id}
+                                scope="viewing"
+                                title="Clips & Photos for this viewing"
+                              />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
               </div>
             </div>
           </>
         )}
 
         <div className="mt-8">
-          <PlayerMediaPanel playerId={player.id} scope="all" title="Player Media" />
+          <PlayerMediaPanel playerId={player.id} scope="gallery" title="Highlights Gallery" />
         </div>
       </main>
 
