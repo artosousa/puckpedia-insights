@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardCheck, Plus, Search, Users, Star, TrendingUp,
-  BarChart3, Calendar, ChevronRight, LogOut
+  Calendar, LogOut, ClipboardList, LayoutDashboard,
 } from "lucide-react";
-import { useScoutingData } from "@/hooks/useScoutingData";
+import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,24 +18,22 @@ const Dashboard = () => {
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [searchQuery, setSearchQuery] = useState("");
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
-  const [viewingPlayerId, setViewingPlayerId] = useState<string | null>(null);
+  const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
 
   const teamMap = useMemo(() => Object.fromEntries(teams.map((t) => [t.id, t])), [teams]);
   const leagueMap = useMemo(() => Object.fromEntries(leagues.map((l) => [l.id, l])), [leagues]);
   const playerMap = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
+  const viewingsByPlayer = useMemo(() => {
+    const m: Record<string, number> = {};
+    viewings.forEach((v) => { m[v.player_id] = (m[v.player_id] ?? 0) + 1; });
+    return m;
+  }, [viewings]);
 
-  const recent = viewings.slice(0, 5);
   const thisMonth = viewings.filter((v) => {
     const d = new Date(v.game_date);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
-
-  const filteredSearch = searchQuery
-    ? players.filter((p) =>
-        `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 5)
-    : [];
 
   const stats = [
     { label: "Total Players", value: players.length, icon: Users },
@@ -43,6 +41,10 @@ const Dashboard = () => {
     { label: "Leagues", value: leagues.length, icon: Star },
     { label: "This Month", value: thisMonth, icon: Calendar },
   ];
+
+  const filtered = players.filter((p) =>
+    `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,29 +55,6 @@ const Dashboard = () => {
             <span className="font-heading text-base font-bold">BarnNotes</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search players..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-56 focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              {filteredSearch.length > 0 && (
-                <div className="absolute top-full mt-1 w-full rounded-lg bg-surface-elevated border border-border/50 shadow-2xl overflow-hidden z-50">
-                  {filteredSearch.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => { setViewingPlayerId(p.id); setSearchQuery(""); }}
-                      className="w-full px-3 py-2 text-sm text-left hover:bg-primary/10"
-                    >
-                      {p.first_name} {p.last_name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
             <ExportMenu
               filename="barnnotes-export"
               sheets={[
@@ -121,10 +100,6 @@ const Dashboard = () => {
                 },
               ]}
             />
-            <Button variant="hero" size="sm" onClick={() => navigate("/players")}>
-              <Plus className="w-4 h-4" />
-              New Evaluation
-            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -133,6 +108,51 @@ const Dashboard = () => {
             >
               <LogOut className="w-4 h-4" />
             </Button>
+          </div>
+        </div>
+
+        {/* Sub-nav: quick actions + search */}
+        <div className="border-t border-border/50">
+          <div className="container flex items-center justify-between gap-3 h-12 px-6">
+            <div className="flex items-center gap-1">
+              <button
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium bg-primary/10 text-primary"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Overview
+              </button>
+              <button
+                onClick={() => navigate("/players")}
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                Browse Players
+              </button>
+              <button
+                onClick={() => setAddPlayerOpen(true)}
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Player
+              </button>
+              <button
+                onClick={() => navigate("/players")}
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                New Evaluation
+              </button>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search players..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-56 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -164,112 +184,90 @@ const Dashboard = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="md:col-span-2 glass-card rounded-xl p-6"
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-heading text-base font-semibold flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-primary" />
-                Recent Evaluations
-              </h3>
-              <Link to="/players" className="text-xs text-primary flex items-center gap-1 hover:underline">
-                View all <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            {recent.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-sm text-muted-foreground mb-4">
-                  No evaluations yet. Add a player and log your first viewing.
-                </p>
-                <Button variant="hero" size="sm" onClick={() => setAddPlayerOpen(true)}>
-                  <Plus className="w-4 h-4" />
-                  Add Player
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recent.map((v) => {
-                  const player = playerMap[v.player_id];
-                  const team = player?.team_id ? teamMap[player.team_id] : null;
-                  const league = team?.league_id ? leagueMap[team.league_id] : null;
-                  return (
-                    <div
-                      key={v.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-surface-sunken hover:bg-secondary/60 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <span className="text-xs font-heading font-bold text-primary">
-                            {player?.position ?? "—"}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">
-                            {player ? `${player.first_name} ${player.last_name}` : "Unknown"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {team?.name ?? "—"}{league ? ` · ${league.name}` : ""}
-                          </p>
-                        </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-heading text-lg font-semibold">Your Players</h2>
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} {filtered.length === 1 ? "player" : "players"}
+          </p>
+        </div>
+
+        {loading ? (
+          <p className="text-muted-foreground text-sm">Loading...</p>
+        ) : filtered.length === 0 ? (
+          <div className="glass-card rounded-xl p-12 text-center">
+            <ClipboardList className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-heading text-lg font-semibold mb-2">
+              {players.length === 0 ? "No players yet" : "No matches"}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              {players.length === 0
+                ? "Add your first player to start tracking evaluations."
+                : "Try a different search term."}
+            </p>
+            {players.length === 0 && (
+              <Button variant="hero" onClick={() => setAddPlayerOpen(true)}>
+                <Plus className="w-4 h-4" />
+                Add your first player
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((p, i) => {
+              const team = p.team_id ? teamMap[p.team_id] : null;
+              const league = team?.league_id ? leagueMap[team.league_id] : null;
+              const evalCount = viewingsByPlayer[p.id] ?? 0;
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="glass-card rounded-xl p-5 hover:border-primary/40 transition-colors group cursor-pointer"
+                  onClick={() => navigate(`/players/${p.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-heading font-bold text-primary">
+                          {p.position ?? "—"}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(v.game_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                        </span>
-                        <span className="font-heading text-sm font-bold text-primary">
-                          {v.rating_overall ?? "—"}
-                        </span>
+                      <div>
+                        <p className="font-medium group-hover:text-primary transition-colors">
+                          {p.first_name} {p.last_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {team?.name ?? "No team"}{league ? ` · ${league.name}` : ""}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-            className="glass-card rounded-xl p-6"
-          >
-            <h3 className="font-heading text-base font-semibold mb-4">Quick Actions</h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => setAddPlayerOpen(true)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-sunken hover:bg-primary/10 hover:text-primary transition-all text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Add Player
-              </button>
-              <button
-                onClick={() => navigate("/players")}
-                className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-sunken hover:bg-primary/10 hover:text-primary transition-all text-sm font-medium"
-              >
-                <Users className="w-4 h-4" />
-                Browse Players
-              </button>
-              <button
-                onClick={() => navigate("/players")}
-                className="w-full flex items-center gap-3 p-3 rounded-lg bg-surface-sunken hover:bg-primary/10 hover:text-primary transition-all text-sm font-medium"
-              >
-                <ClipboardCheck className="w-4 h-4" />
-                New Evaluation
-              </button>
-            </div>
-          </motion.div>
-        </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                    <span>{p.shoots ? `Shoots ${p.shoots}` : "—"}</span>
+                    <span>{evalCount} viewing{evalCount === 1 ? "" : "s"}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={(e) => { e.stopPropagation(); setViewingPlayer(p); }}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    New Viewing
+                  </Button>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       <AddPlayerDialog open={addPlayerOpen} onOpenChange={setAddPlayerOpen} />
       <NewViewingDialog
-        open={!!viewingPlayerId}
-        onOpenChange={(v) => !v && setViewingPlayerId(null)}
-        player={viewingPlayerId ? playerMap[viewingPlayerId] ?? null : null}
+        open={!!viewingPlayer}
+        onOpenChange={(v) => !v && setViewingPlayer(null)}
+        player={viewingPlayer}
       />
     </div>
   );
