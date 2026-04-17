@@ -11,6 +11,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { mediaCapabilities, MEDIA_LIMITS, SKILL_TAGS } from "@/lib/tiers";
 import {
   deletePlayerMedia,
+  extractVideoAnalysisFrame,
   getSignedUrl,
   getVideoDuration,
   listPlayerMedia,
@@ -146,8 +147,18 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
     }
     setAnalyzingId(m.id);
     try {
+      const frameCapture = m.kind === "video"
+        ? await extractVideoAnalysisFrame(m)
+        : null;
+
       const { data, error } = await supabase.functions.invoke("analyze-player-media", {
-        body: { media_id: m.id },
+        body: {
+          media_id: m.id,
+          frame_data_url: frameCapture?.dataUrl,
+          analysis_source: frameCapture
+            ? `cropped video frame at ${frameCapture.frameTime.toFixed(2)}s`
+            : undefined,
+        },
       });
       // Surface the real server error (e.g. "Video too large…", rate limit, credits)
       if (error) {
