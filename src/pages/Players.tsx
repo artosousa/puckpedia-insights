@@ -1,21 +1,31 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { ClipboardCheck, Plus, Search, ArrowLeft, ClipboardList } from "lucide-react";
+import { ClipboardCheck, Plus, Search, ArrowLeft, ClipboardList, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const Players = () => {
   const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
+  const { tier } = useSubscription();
   const [query, setQuery] = useState("");
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
+
+  const atLimit = players.length >= tier.playerLimit;
+  const tryAddPlayer = () => {
+    if (atLimit) { setUpgradeOpen(true); return; }
+    setAddOpen(true);
+  };
 
   const teamMap = useMemo(() => Object.fromEntries(teams.map((t) => [t.id, t])), [teams]);
   const leagueMap = useMemo(() => Object.fromEntries(leagues.map((l) => [l.id, l])), [leagues]);
@@ -93,8 +103,8 @@ const Players = () => {
                 },
               ]}
             />
-            <Button variant="hero" size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="w-4 h-4" />
+            <Button variant="hero" size="sm" onClick={tryAddPlayer}>
+              {atLimit ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               Add Player
             </Button>
           </div>
@@ -103,10 +113,17 @@ const Players = () => {
 
       <main className="container px-6 py-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <h1 className="font-heading text-2xl font-bold mb-1">Players</h1>
-          <p className="text-muted-foreground text-sm mb-6">
-            {players.length} {players.length === 1 ? "player" : "players"} in your database
-          </p>
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h1 className="font-heading text-2xl font-bold mb-1">Players</h1>
+              <p className="text-muted-foreground text-sm">
+                {players.length}{tier.playerLimit !== Infinity ? ` / ${tier.playerLimit}` : ""} {players.length === 1 ? "player" : "players"} in your database
+              </p>
+            </div>
+            <Link to="/pricing" className="text-xs px-2 py-1 rounded-md bg-secondary border border-border/50 hover:border-primary/40 transition-colors">
+              {tier.name} plan
+            </Link>
+          </div>
         </motion.div>
 
         {loading ? (
@@ -123,7 +140,7 @@ const Players = () => {
                 : "Try a different search term."}
             </p>
             {players.length === 0 && (
-              <Button variant="hero" onClick={() => setAddOpen(true)}>
+              <Button variant="hero" onClick={tryAddPlayer}>
                 <Plus className="w-4 h-4" />
                 Add your first player
               </Button>
@@ -186,6 +203,12 @@ const Players = () => {
         open={!!viewingPlayer}
         onOpenChange={(v) => !v && setViewingPlayer(null)}
         player={viewingPlayer}
+      />
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title={`You've hit your ${tier.name} player limit`}
+        description={`The ${tier.name} plan supports up to ${tier.playerLimit} players. Upgrade to add more prospects to your board.`}
       />
     </div>
   );

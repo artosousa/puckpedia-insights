@@ -16,6 +16,8 @@ import { ExportMenu } from "@/components/ExportMenu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useSubscription } from "@/hooks/useSubscription";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -28,9 +30,11 @@ const PlayerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
+  const { tier } = useSubscription();
   const [viewingOpen, setViewingOpen] = useState(false);
   const [report, setReport] = useState<string>("");
   const [reportLoading, setReportLoading] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const player = useMemo(() => players.find((p) => p.id === id) ?? null, [players, id]);
   const team = player?.team_id ? teams.find((t) => t.id === player.team_id) : null;
@@ -82,6 +86,10 @@ const PlayerProfile = () => {
 
   const generateReport = async () => {
     if (!player) return;
+    if (!tier.aiReports) {
+      setUpgradeOpen(true);
+      return;
+    }
     if (playerViewings.length === 0) {
       toast.error("Log at least one viewing before generating a report.");
       return;
@@ -190,9 +198,15 @@ const PlayerProfile = () => {
                 },
               ]}
             />
-            <Button variant="outline" size="sm" onClick={generateReport} disabled={reportLoading || playerViewings.length === 0}>
-              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {report ? "Regenerate Report" : "AI Report"}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generateReport}
+              disabled={reportLoading || (tier.aiReports && playerViewings.length === 0)}
+              title={!tier.aiReports ? "AI reports are available on the Pro plan" : undefined}
+            >
+              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : !tier.aiReports ? <Sparkles className="w-4 h-4 opacity-60" /> : <Sparkles className="w-4 h-4" />}
+              {!tier.aiReports ? "AI Report (Pro)" : report ? "Regenerate Report" : "AI Report"}
             </Button>
             <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
               <Plus className="w-4 h-4" />
