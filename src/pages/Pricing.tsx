@@ -84,7 +84,7 @@ const Pricing = () => {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <h1 className="font-heading text-4xl md:text-5xl font-bold mb-3">Pick your plan.</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            From Healthy Scratch to 1st Line — scale your scouting workflow as your prospect list grows.
+            From Healthy Scratch to McJesus — scale your scouting workflow as your prospect list grows.
           </p>
         </motion.div>
 
