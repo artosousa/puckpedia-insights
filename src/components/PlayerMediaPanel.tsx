@@ -42,6 +42,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [editing, setEditing] = useState<PlayerMedia | null>(null);
   /** IDs of items just uploaded that still need tags. */
   const [pendingTagIds, setPendingTagIds] = useState<string[]>([]);
+  const [dragActive, setDragActive] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
