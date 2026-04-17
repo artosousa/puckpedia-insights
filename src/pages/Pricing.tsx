@@ -82,7 +82,7 @@ const Pricing = () => {
             Pick your plan.
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            From Healthy Scratch to 1st Line — scale your scouting workflow as your prospect list grows.
+            From Healthy Scratch to McJesus — scale your scouting workflow as your prospect list grows.
           </p>
         </motion.div>
 
