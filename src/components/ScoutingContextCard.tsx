@@ -126,33 +126,6 @@ export function ScoutingContextCard({ player, league }: Props) {
             placeholder="e.g. 38 yrs old, started playing at 31 (lost 2 yrs to pandemic), forward, plays once a week."
           />
         </div>
-
-        <div className="space-y-2 md:col-span-2">
-          <Label className="text-xs flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-primary" />
-            Scout Confidence
-            <span className="text-muted-foreground font-normal">
-              · auto-calculated from your viewings + AI clip ratings
-            </span>
-          </Label>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span
-              className={`text-xs px-3 py-1.5 rounded-full border font-semibold uppercase tracking-wide ${
-                CONFIDENCE_STYLE[confidence.level] ?? CONFIDENCE_STYLE.low
-              }`}
-            >
-              {confidence.level}
-            </span>
-            <span className="text-xs text-muted-foreground">{confidence.reason}</span>
-            <span className="text-[10px] text-muted-foreground ml-auto">
-              Score: {confidence.score}/100
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            More viewings + analyzed clips raise confidence. Wildly inconsistent ratings across sources
-            lower it. Log more viewings or analyze more clips to strengthen the read.
-          </p>
-        </div>
       </div>
     </section>
   );
