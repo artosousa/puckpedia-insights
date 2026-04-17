@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ClipboardCheck, ArrowRight } from "lucide-react";
 
@@ -44,12 +45,14 @@ const HeroSection = () => {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Button variant="hero" size="lg" className="text-base px-8 py-6">
-              Start Scouting Free
-              <ArrowRight className="w-5 h-5 ml-1" />
+            <Button variant="hero" size="lg" className="text-base px-8 py-6" asChild>
+              <Link to="/auth">
+                Start Scouting Free
+                <ArrowRight className="w-5 h-5 ml-1" />
+              </Link>
             </Button>
-            <Button variant="hero-outline" size="lg" className="text-base px-8 py-6">
-              See How It Works
+            <Button variant="hero-outline" size="lg" className="text-base px-8 py-6" asChild>
+              <a href="#features">See How It Works</a>
             </Button>
           </motion.div>
 

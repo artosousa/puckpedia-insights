@@ -4,14 +4,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardCheck, Plus, Search, Users, Star, TrendingUp,
-  BarChart3, Calendar, ChevronRight
+  BarChart3, Calendar, ChevronRight, LogOut
 } from "lucide-react";
 import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { signOut, user } = useAuth();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [searchQuery, setSearchQuery] = useState("");
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
@@ -76,6 +78,14 @@ const Dashboard = () => {
             <Button variant="hero" size="sm" onClick={() => navigate("/players")}>
               <Plus className="w-4 h-4" />
               New Evaluation
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => { await signOut(); navigate("/"); }}
+              title={user?.email ?? "Log out"}
+            >
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
