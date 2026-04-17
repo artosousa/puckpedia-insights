@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export type League = { id: string; name: string; abbreviation: string | null };
 export type Team = { id: string; name: string; league_id: string | null };
@@ -54,9 +55,15 @@ export const ScoutingDataProvider = ({ children }: { children: ReactNode }) => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [viewings, setViewings] = useState<Viewing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const refresh = useCallback(async () => {
+    if (!user) {
+      setLeagues([]); setTeams([]); setPlayers([]); setViewings([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const [l, t, p, v] = await Promise.all([
       supabase.from("leagues").select("*").order("name"),
@@ -64,12 +71,12 @@ export const ScoutingDataProvider = ({ children }: { children: ReactNode }) => {
       supabase.from("players").select("*").order("last_name"),
       supabase.from("viewings").select("*").order("game_date", { ascending: false }),
     ]);
-    if (l.data) setLeagues(l.data);
-    if (t.data) setTeams(t.data);
-    if (p.data) setPlayers(p.data);
-    if (v.data) setViewings(v.data);
+    setLeagues(l.data ?? []);
+    setTeams(t.data ?? []);
+    setPlayers(p.data ?? []);
+    setViewings(v.data ?? []);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     refresh();
