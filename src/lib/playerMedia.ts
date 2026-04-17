@@ -69,6 +69,135 @@ export async function getVideoDuration(file: File): Promise<number> {
   });
 }
 
+const FRAME_CAPTURE_MAX_DIMENSION = 1280;
+const FRAME_CAPTURE_EPSILON_SECONDS = 0.05;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+async function loadVideoForFrameCapture(url: string): Promise<HTMLVideoElement> {
+  return await new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+
+    const cleanup = () => {
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
+      video.removeEventListener("error", onError);
+    };
+
+    const onLoadedMetadata = () => {
+      cleanup();
+      resolve(video);
+    };
+
+    const onError = () => {
+      cleanup();
+      reject(new Error("Couldn't load this video for AI analysis."));
+    };
+
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
+    video.addEventListener("error", onError);
+    video.src = url;
+    video.load();
+  });
+}
+
+async function seekVideoForFrameCapture(video: HTMLVideoElement, time: number) {
+  await new Promise<void>((resolve, reject) => {
+    const onSeeked = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onError = () => {
+      cleanup();
+      reject(new Error("Couldn't capture a frame from this video."));
+    };
+
+    const cleanup = () => {
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("error", onError);
+    };
+
+    video.addEventListener("seeked", onSeeked);
+    video.addEventListener("error", onError);
+    video.currentTime = time;
+  });
+
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+export async function extractVideoAnalysisFrame(media: Pick<PlayerMedia, "storage_path" | "duration_seconds" | "edit">) {
+  const url = await getSignedUrl(media.storage_path, 600);
+  const video = await loadVideoForFrameCapture(url);
+
+  try {
+    const duration = Number.isFinite(video.duration) ? video.duration : (media.duration_seconds ?? 0);
+    const trimIn = media.edit?.trim?.in ?? 0;
+    const trimOut = media.edit?.trim?.out ?? duration;
+    const safeTrimOut = trimOut > trimIn ? trimOut : duration;
+    const firstKeyframeTime = media.edit?.track?.[0]?.t;
+    const fallbackTime = safeTrimOut > trimIn ? trimIn + Math.min(0.5, (safeTrimOut - trimIn) / 2) : trimIn;
+    const unclampedTime = firstKeyframeTime ?? fallbackTime;
+    const maxTime = Math.max(0, duration - FRAME_CAPTURE_EPSILON_SECONDS);
+    const frameTime = clamp(unclampedTime, 0, maxTime);
+
+    await seekVideoForFrameCapture(video, frameTime);
+
+    const crop = rectAtTime(media.edit?.track, frameTime);
+    const sourceWidth = video.videoWidth || 1;
+    const sourceHeight = video.videoHeight || 1;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = sourceWidth;
+    let sh = sourceHeight;
+
+    if (crop) {
+      const left = clamp(crop.cx - crop.w / 2, 0, 1);
+      const top = clamp(crop.cy - crop.h / 2, 0, 1);
+      const right = clamp(crop.cx + crop.w / 2, 0, 1);
+      const bottom = clamp(crop.cy + crop.h / 2, 0, 1);
+
+      sx = Math.floor(left * sourceWidth);
+      sy = Math.floor(top * sourceHeight);
+      sw = Math.max(1, Math.floor((right - left) * sourceWidth));
+      sh = Math.max(1, Math.floor((bottom - top) * sourceHeight));
+    }
+
+    const scale = Math.min(1, FRAME_CAPTURE_MAX_DIMENSION / Math.max(sw, sh));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sw * scale));
+    canvas.height = Math.max(1, Math.round(sh * scale));
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Couldn't prepare the video frame for AI analysis.");
+    }
+
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    return {
+      dataUrl: canvas.toDataURL("image/jpeg", 0.88),
+      frameTime,
+      cropped: Boolean(crop),
+    };
+  } catch (error) {
+    if (error instanceof Error && error.name === "SecurityError") {
+      throw new Error("Couldn't capture the video frame. Reopen the clip and try again.");
+    }
+    throw error;
+  } finally {
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+  }
+}
+
 export interface UploadInput {
   file: File;
   userId: string;
