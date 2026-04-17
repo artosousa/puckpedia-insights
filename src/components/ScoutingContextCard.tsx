@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { Info, Loader2, Save } from "lucide-react";
+import { Info, Loader2, Save, Sparkles } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useScoutingData, type League, type Player } from "@/hooks/useScoutingData";
 import { toast } from "sonner";
+import type { ConfidenceResult } from "@/lib/scoutConfidence";
 
 interface Props {
   player: Player;
   league: League | null;
+  confidence: ConfidenceResult;
 }
 
 const LEVEL_PRESETS = [
@@ -36,11 +38,16 @@ const LEVEL_PRESETS = [
   "Pro (ECHL / AHL / NHL)",
 ];
 
-export function ScoutingContextCard({ player, league }: Props) {
+const CONFIDENCE_STYLE: Record<string, string> = {
+  low: "bg-muted/40 text-muted-foreground border-border",
+  medium: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+  high: "bg-primary/15 text-primary border-primary/40",
+};
+
+export function ScoutingContextCard({ player, league, confidence }: Props) {
   const { updatePlayer, updateLeague } = useScoutingData();
   const [level, setLevel] = useState(league?.level ?? "");
   const [context, setContext] = useState(player.player_context ?? "");
-  const [confidence, setConfidence] = useState<string>(player.scout_confidence ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -49,13 +56,11 @@ export function ScoutingContextCard({ player, league }: Props) {
 
   useEffect(() => {
     setContext(player.player_context ?? "");
-    setConfidence(player.scout_confidence ?? "");
-  }, [player.id, player.player_context, player.scout_confidence]);
+  }, [player.id, player.player_context]);
 
   const dirty =
     (league ? (level || null) !== (league.level || null) : false) ||
-    (context || null) !== (player.player_context || null) ||
-    (confidence || null) !== (player.scout_confidence || null);
+    (context || null) !== (player.player_context || null);
 
   const save = async () => {
     setSaving(true);
@@ -64,15 +69,8 @@ export function ScoutingContextCard({ player, league }: Props) {
       if (league && (level || null) !== (league.level || null)) {
         tasks.push(updateLeague(league.id, { level: level.trim() || null }));
       }
-      const playerPatch: Partial<Player> = {};
       if ((context || null) !== (player.player_context || null)) {
-        playerPatch.player_context = context.trim() || null;
-      }
-      if ((confidence || null) !== (player.scout_confidence || null)) {
-        playerPatch.scout_confidence = confidence || null;
-      }
-      if (Object.keys(playerPatch).length > 0) {
-        tasks.push(updatePlayer(player.id, playerPatch));
+        tasks.push(updatePlayer(player.id, { player_context: context.trim() || null }));
       }
       await Promise.all(tasks);
       toast.success("Scouting context saved");
@@ -82,12 +80,6 @@ export function ScoutingContextCard({ player, league }: Props) {
       setSaving(false);
     }
   };
-
-  const confidenceOptions: { value: string; label: string; hint: string }[] = [
-    { value: "low", label: "Low", hint: "Limited viewings, unsure of trajectory" },
-    { value: "medium", label: "Medium", hint: "Reasonable read, want more looks" },
-    { value: "high", label: "High", hint: "Confident in this evaluation" },
-  ];
 
   return (
     <section className="glass-card rounded-xl p-6 mb-8">
@@ -143,31 +135,30 @@ export function ScoutingContextCard({ player, league }: Props) {
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label className="text-xs">
+          <Label className="text-xs flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-primary" />
             Scout Confidence
-            <span className="text-muted-foreground"> · how sure are you in your read on this player?</span>
+            <span className="text-muted-foreground font-normal">
+              · auto-calculated from your viewings + AI clip ratings
+            </span>
           </Label>
-          <div className="flex flex-wrap gap-2">
-            {confidenceOptions.map((opt) => {
-              const active = confidence === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setConfidence(active ? "" : opt.value)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition text-left ${
-                    active
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                  }`}
-                  title={opt.hint}
-                >
-                  <span className="font-semibold">{opt.label}</span>
-                  <span className={`ml-1.5 text-[10px] ${active ? "opacity-90" : "opacity-60"}`}>{opt.hint}</span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span
+              className={`text-xs px-3 py-1.5 rounded-full border font-semibold uppercase tracking-wide ${
+                CONFIDENCE_STYLE[confidence.level] ?? CONFIDENCE_STYLE.low
+              }`}
+            >
+              {confidence.level}
+            </span>
+            <span className="text-xs text-muted-foreground">{confidence.reason}</span>
+            <span className="text-[10px] text-muted-foreground ml-auto">
+              Score: {confidence.score}/100
+            </span>
           </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            More viewings + analyzed clips raise confidence. Wildly inconsistent ratings across sources
+            lower it. Log more viewings or analyze more clips to strengthen the read.
+          </p>
         </div>
       </div>
     </section>
