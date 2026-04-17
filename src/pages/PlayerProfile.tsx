@@ -90,23 +90,50 @@ const PlayerProfile = () => {
           <div className="flex items-center gap-3">
             <ExportMenu
               filename={`barnnotes-${player.last_name.toLowerCase()}`}
-              sheets={[{
-                name: "Viewings",
-                rows: playerViewings.map((v) => ({
-                  game_date: v.game_date,
-                  opponent: v.opponent ?? "",
-                  location: v.location ?? "",
-                  skating: v.rating_skating ?? "",
-                  shot: v.rating_shot ?? "",
-                  hands: v.rating_hands ?? "",
-                  iq: v.rating_iq ?? "",
-                  compete: v.rating_compete ?? "",
-                  physicality: v.rating_physicality ?? "",
-                  overall: v.rating_overall ?? "",
-                  projection: v.projection ?? "",
-                  notes: v.notes ?? "",
-                })),
-              }]}
+              sheets={[
+                {
+                  name: "Profile",
+                  rows: [{
+                    first_name: player.first_name,
+                    last_name: player.last_name,
+                    position: player.position ?? "",
+                    shoots: player.shoots ?? "",
+                    jersey_number: player.jersey_number ?? "",
+                    date_of_birth: player.date_of_birth ?? "",
+                    height_cm: player.height_cm ?? "",
+                    weight_kg: player.weight_kg ?? "",
+                    team: team?.name ?? "",
+                    league: league?.name ?? "",
+                    total_viewings: playerViewings.length,
+                    avg_overall: overallAvg || "",
+                    avg_skating: +avg(playerViewings.map((v) => v.rating_skating)).toFixed(1) || "",
+                    avg_shot: +avg(playerViewings.map((v) => v.rating_shot)).toFixed(1) || "",
+                    avg_hands: +avg(playerViewings.map((v) => v.rating_hands)).toFixed(1) || "",
+                    avg_iq: +avg(playerViewings.map((v) => v.rating_iq)).toFixed(1) || "",
+                    avg_compete: +avg(playerViewings.map((v) => v.rating_compete)).toFixed(1) || "",
+                    avg_physicality: +avg(playerViewings.map((v) => v.rating_physicality)).toFixed(1) || "",
+                    created_at: player.created_at,
+                  }],
+                },
+                {
+                  name: "Viewings",
+                  rows: playerViewings.map((v) => ({
+                    game_date: v.game_date,
+                    opponent: v.opponent ?? "",
+                    location: v.location ?? "",
+                    skating: v.rating_skating ?? "",
+                    shot: v.rating_shot ?? "",
+                    hands: v.rating_hands ?? "",
+                    iq: v.rating_iq ?? "",
+                    compete: v.rating_compete ?? "",
+                    physicality: v.rating_physicality ?? "",
+                    overall: v.rating_overall ?? "",
+                    projection: v.projection ?? "",
+                    notes: v.notes ?? "",
+                    logged_at: v.created_at,
+                  })),
+                },
+              ]}
             />
             <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
               <Plus className="w-4 h-4" />
