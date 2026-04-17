@@ -266,7 +266,7 @@ const PlayerProfile = () => {
           </div>
         </div>
 
-        {playerViewings.length === 0 ? (
+        <ScoutingContextCard player={player} league={league ?? null} />
           <div className="glass-card rounded-xl p-12 text-center">
             <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-heading text-lg font-semibold mb-2">No viewings yet</h3>
