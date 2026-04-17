@@ -20,18 +20,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          user_id: string
         }
         Insert: {
           abbreviation?: string | null
           created_at?: string
           id?: string
           name: string
+          user_id?: string
         }
         Update: {
           abbreviation?: string | null
           created_at?: string
           id?: string
           name?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -48,6 +51,7 @@ export type Database = {
           shoots: string | null
           team_id: string | null
           updated_at: string
+          user_id: string
           weight_kg: number | null
         }
         Insert: {
@@ -62,6 +66,7 @@ export type Database = {
           shoots?: string | null
           team_id?: string | null
           updated_at?: string
+          user_id?: string
           weight_kg?: number | null
         }
         Update: {
@@ -76,6 +81,7 @@ export type Database = {
           shoots?: string | null
           team_id?: string | null
           updated_at?: string
+          user_id?: string
           weight_kg?: number | null
         }
         Relationships: [
@@ -94,18 +100,21 @@ export type Database = {
           id: string
           league_id: string | null
           name: string
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           league_id?: string | null
           name: string
+          user_id?: string
         }
         Update: {
           created_at?: string
           id?: string
           league_id?: string | null
           name?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -135,6 +144,7 @@ export type Database = {
           rating_shot: number | null
           rating_skating: number | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -153,6 +163,7 @@ export type Database = {
           rating_shot?: number | null
           rating_skating?: number | null
           updated_at?: string
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -171,6 +182,7 @@ export type Database = {
           rating_shot?: number | null
           rating_skating?: number | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -189,6 +201,7 @@ export type Database = {
           notes: string | null
           player_id: string
           tier: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -196,6 +209,7 @@ export type Database = {
           notes?: string | null
           player_id: string
           tier?: string | null
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -203,6 +217,7 @@ export type Database = {
           notes?: string | null
           player_id?: string
           tier?: string | null
+          user_id?: string
         }
         Relationships: [
           {
