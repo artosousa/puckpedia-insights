@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -7,12 +7,13 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  ArrowLeft, ClipboardCheck, Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
+  Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
+import { AppHeader } from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { stripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
@@ -140,110 +141,103 @@ const PlayerProfile = () => {
     }
   };
 
+  const exportSheets = [
+    {
+      name: "Profile",
+      rows: [{
+        first_name: player.first_name,
+        last_name: player.last_name,
+        position: player.position ?? "",
+        shoots: player.shoots ?? "",
+        jersey_number: player.jersey_number ?? "",
+        date_of_birth: player.date_of_birth ?? "",
+        height_cm: player.height_cm ?? "",
+        weight_kg: player.weight_kg ?? "",
+        team: team?.name ?? "",
+        league: league?.name ?? "",
+        total_viewings: playerViewings.length,
+        avg_overall: overallAvg || "",
+        avg_skating: +avg(playerViewings.map((v) => v.rating_skating)).toFixed(1) || "",
+        avg_shot: +avg(playerViewings.map((v) => v.rating_shot)).toFixed(1) || "",
+        avg_hands: +avg(playerViewings.map((v) => v.rating_hands)).toFixed(1) || "",
+        avg_iq: +avg(playerViewings.map((v) => v.rating_iq)).toFixed(1) || "",
+        avg_compete: +avg(playerViewings.map((v) => v.rating_compete)).toFixed(1) || "",
+        avg_physicality: +avg(playerViewings.map((v) => v.rating_physicality)).toFixed(1) || "",
+        created_at: player.created_at,
+        ai_scouting_report: report || "",
+      }],
+    },
+    {
+      name: "Viewings",
+      rows: playerViewings.map((v) => ({
+        game_date: v.game_date,
+        opponent: v.opponent ?? "",
+        location: v.location ?? "",
+        skating: v.rating_skating ?? "",
+        shot: v.rating_shot ?? "",
+        hands: v.rating_hands ?? "",
+        iq: v.rating_iq ?? "",
+        compete: v.rating_compete ?? "",
+        physicality: v.rating_physicality ?? "",
+        overall: v.rating_overall ?? "",
+        projection: v.projection ?? "",
+        notes: v.notes ?? "",
+        logged_at: v.created_at,
+      })),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <Link to="/players" className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <ClipboardCheck className="w-5 h-5 text-primary" />
-            <span className="font-heading text-base font-bold">BarnNotes</span>
-            <span className="text-muted-foreground text-sm">/ {player.first_name} {player.last_name}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <ExportMenu
-              filename={`barnnotes-${player.last_name.toLowerCase()}`}
-              sheets={[
-                {
-                  name: "Profile",
-                  rows: [{
-                    first_name: player.first_name,
-                    last_name: player.last_name,
-                    position: player.position ?? "",
-                    shoots: player.shoots ?? "",
-                    jersey_number: player.jersey_number ?? "",
-                    date_of_birth: player.date_of_birth ?? "",
-                    height_cm: player.height_cm ?? "",
-                    weight_kg: player.weight_kg ?? "",
-                    team: team?.name ?? "",
-                    league: league?.name ?? "",
-                    total_viewings: playerViewings.length,
-                    avg_overall: overallAvg || "",
-                    avg_skating: +avg(playerViewings.map((v) => v.rating_skating)).toFixed(1) || "",
-                    avg_shot: +avg(playerViewings.map((v) => v.rating_shot)).toFixed(1) || "",
-                    avg_hands: +avg(playerViewings.map((v) => v.rating_hands)).toFixed(1) || "",
-                    avg_iq: +avg(playerViewings.map((v) => v.rating_iq)).toFixed(1) || "",
-                    avg_compete: +avg(playerViewings.map((v) => v.rating_compete)).toFixed(1) || "",
-                    avg_physicality: +avg(playerViewings.map((v) => v.rating_physicality)).toFixed(1) || "",
-                    created_at: player.created_at,
-                    ai_scouting_report: report || "",
-                  }],
-                },
-                {
-                  name: "Viewings",
-                  rows: playerViewings.map((v) => ({
-                    game_date: v.game_date,
-                    opponent: v.opponent ?? "",
-                    location: v.location ?? "",
-                    skating: v.rating_skating ?? "",
-                    shot: v.rating_shot ?? "",
-                    hands: v.rating_hands ?? "",
-                    iq: v.rating_iq ?? "",
-                    compete: v.rating_compete ?? "",
-                    physicality: v.rating_physicality ?? "",
-                    overall: v.rating_overall ?? "",
-                    projection: v.projection ?? "",
-                    notes: v.notes ?? "",
-                    logged_at: v.created_at,
-                  })),
-                },
-              ]}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={generateReport}
-              disabled={reportLoading || (canGenerateReport && playerViewings.length === 0)}
-              title={
-                !tier.aiReports
-                  ? "AI reports are available on 2nd Line and 1st Line plans"
-                  : aiReportsRemaining <= 0
-                  ? `Monthly limit reached (${aiReportsThisMonth}/${tier.aiReportsPerMonth})`
-                  : undefined
-              }
-            >
-              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className={`w-4 h-4 ${canGenerateReport ? "" : "opacity-60"}`} />}
-              {!tier.aiReports
-                ? "AI Report (Minor+)"
-                : aiReportsRemaining <= 0
-                ? "Limit reached"
-                : isFinite(tier.aiReportsPerMonth)
-                ? `AI Report (${aiReportsRemaining} left)`
-                : report ? "Regenerate Report" : "AI Report"}
-            </Button>
-            <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
-              <Plus className="w-4 h-4" />
-              New Viewing
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader crumb={`${player.first_name} ${player.last_name}`} />
 
       <main className="container px-6 py-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="text-base font-heading font-bold text-primary">{player.position ?? "—"}</span>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-base font-heading font-bold text-primary">{player.position ?? "—"}</span>
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-heading text-2xl font-bold truncate">{player.first_name} {player.last_name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {team?.name ?? "No team"}{league ? ` · ${league.name}` : ""}
+                  {player.shoots ? ` · Shoots ${player.shoots}` : ""}
+                  {player.jersey_number ? ` · #${player.jersey_number}` : ""}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-heading text-2xl font-bold">{player.first_name} {player.last_name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {team?.name ?? "No team"}{league ? ` · ${league.name}` : ""}
-                {player.shoots ? ` · Shoots ${player.shoots}` : ""}
-                {player.jersey_number ? ` · #${player.jersey_number}` : ""}
-              </p>
+            <div className="flex flex-wrap items-center gap-2 md:shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generateReport}
+                disabled={reportLoading || (canGenerateReport && playerViewings.length === 0)}
+                title={
+                  !tier.aiReports
+                    ? "AI reports are available on 2nd Line and 1st Line plans"
+                    : aiReportsRemaining <= 0
+                    ? `Monthly limit reached (${aiReportsThisMonth}/${tier.aiReportsPerMonth})`
+                    : undefined
+                }
+              >
+                {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className={`w-4 h-4 ${canGenerateReport ? "" : "opacity-60"}`} />}
+                {!tier.aiReports
+                  ? "AI Report (2nd Line+)"
+                  : aiReportsRemaining <= 0
+                  ? "Limit reached"
+                  : isFinite(tier.aiReportsPerMonth)
+                  ? `AI Report (${aiReportsRemaining} left)`
+                  : report ? "Regenerate Report" : "AI Report"}
+              </Button>
+              <ExportMenu
+                filename={`barnnotes-${player.last_name.toLowerCase()}`}
+                sheets={exportSheets}
+              />
+              <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
+                <Plus className="w-4 h-4" />
+                New Viewing
+              </Button>
             </div>
           </div>
         </motion.div>
