@@ -365,6 +365,16 @@ function MediaCard({
             {media.edit?.trim || (media.edit?.track && media.edit.track.length > 0) ? " · edited" : ""}
           </span>
           <div className="flex items-center gap-2">
+            {media.kind === "video" && (
+              <button
+                onClick={onEdit}
+                className="text-muted-foreground hover:text-primary transition"
+                aria-label="Edit clip"
+                title="Trim & track"
+              >
+                <Crop className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               onClick={onExpand}
               className="text-muted-foreground hover:text-primary transition"
