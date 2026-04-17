@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Check, ClipboardCheck, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TIERS, type Tier } from "@/lib/tiers";
+import { TIERS, type Tier, aiReportsLimitLabel } from "@/lib/tiers";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
@@ -167,7 +167,7 @@ const Pricing = () => {
                       <span className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground/50">—</span>
                     )}
                     <span className={tier.aiReports ? "" : "text-muted-foreground/60"}>
-                      AI scouting reports
+                      AI scouting reports — {aiReportsLimitLabel(tier)}
                     </span>
                   </li>
                 </ul>

@@ -30,7 +30,7 @@ const PlayerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
-  const { tier } = useSubscription();
+  const { tier, canGenerateReport, aiReportsRemaining, aiReportsThisMonth } = useSubscription();
   const [viewingOpen, setViewingOpen] = useState(false);
   const [report, setReport] = useState<string>("");
   const [reportLoading, setReportLoading] = useState(false);
@@ -86,7 +86,7 @@ const PlayerProfile = () => {
 
   const generateReport = async () => {
     if (!player) return;
-    if (!tier.aiReports) {
+    if (!tier.aiReports || aiReportsRemaining <= 0) {
       setUpgradeOpen(true);
       return;
     }
@@ -98,6 +98,7 @@ const PlayerProfile = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-scouting-report", {
         body: {
+          player_id: player.id,
           player: {
             first_name: player.first_name,
             last_name: player.last_name,
@@ -202,11 +203,23 @@ const PlayerProfile = () => {
               variant="outline"
               size="sm"
               onClick={generateReport}
-              disabled={reportLoading || (tier.aiReports && playerViewings.length === 0)}
-              title={!tier.aiReports ? "AI reports are available on the Pro plan" : undefined}
+              disabled={reportLoading || (canGenerateReport && playerViewings.length === 0)}
+              title={
+                !tier.aiReports
+                  ? "AI reports are available on Minor and Pro plans"
+                  : aiReportsRemaining <= 0
+                  ? `Monthly limit reached (${aiReportsThisMonth}/${tier.aiReportsPerMonth})`
+                  : undefined
+              }
             >
-              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : !tier.aiReports ? <Sparkles className="w-4 h-4 opacity-60" /> : <Sparkles className="w-4 h-4" />}
-              {!tier.aiReports ? "AI Report (Pro)" : report ? "Regenerate Report" : "AI Report"}
+              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className={`w-4 h-4 ${canGenerateReport ? "" : "opacity-60"}`} />}
+              {!tier.aiReports
+                ? "AI Report (Minor+)"
+                : aiReportsRemaining <= 0
+                ? "Limit reached"
+                : isFinite(tier.aiReportsPerMonth)
+                ? `AI Report (${aiReportsRemaining} left)`
+                : report ? "Regenerate Report" : "AI Report"}
             </Button>
             <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
               <Plus className="w-4 h-4" />
@@ -374,8 +387,12 @@ const PlayerProfile = () => {
       <UpgradeDialog
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
-        title="AI scouting reports are a Pro feature"
-        description="Upgrade to the Pro plan to generate full AI-written scouting reports from your viewings — and unlock unlimited players."
+        title={!tier.aiReports ? "AI reports unlock on Minor" : "Monthly AI report limit reached"}
+        description={
+          !tier.aiReports
+            ? "Upgrade to Minor for 10 AI scouting reports per month, or Pro for unlimited reports plus unlimited players."
+            : `You've used all ${tier.aiReportsPerMonth} AI reports this month. Upgrade to Pro for unlimited reports.`
+        }
       />
     </div>
   );
