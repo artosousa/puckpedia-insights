@@ -371,6 +371,12 @@ const PlayerProfile = () => {
         onOpenChange={setViewingOpen}
         player={player}
       />
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title="AI scouting reports are a Pro feature"
+        description="Upgrade to the Pro plan to generate full AI-written scouting reports from your viewings — and unlock unlimited players."
+      />
     </div>
   );
 };

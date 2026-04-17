@@ -4,21 +4,32 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardCheck, Plus, Search, Users, Star, TrendingUp,
-  Calendar, LogOut, ClipboardList, LayoutDashboard,
+  Calendar, LogOut, ClipboardList, LayoutDashboard, Sparkles, Lock,
 } from "lucide-react";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { ExportMenu } from "@/components/ExportMenu";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
+  const { tier } = useSubscription();
   const [searchQuery, setSearchQuery] = useState("");
   const [addPlayerOpen, setAddPlayerOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
+
+  const atLimit = players.length >= tier.playerLimit;
+  const tryAddPlayer = () => {
+    if (atLimit) { setUpgradeOpen(true); return; }
+    setAddPlayerOpen(true);
+  };
 
   const teamMap = useMemo(() => Object.fromEntries(teams.map((t) => [t.id, t])), [teams]);
   const leagueMap = useMemo(() => Object.fromEntries(leagues.map((l) => [l.id, l])), [leagues]);
@@ -129,10 +140,10 @@ const Dashboard = () => {
                 Browse Players
               </button>
               <button
-                onClick={() => setAddPlayerOpen(true)}
+                onClick={tryAddPlayer}
                 className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
               >
-                <Plus className="w-4 h-4" />
+                {atLimit ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 Add Player
               </button>
               <button
@@ -142,6 +153,13 @@ const Dashboard = () => {
                 <ClipboardCheck className="w-4 h-4" />
                 New Evaluation
               </button>
+              <Link
+                to="/pricing"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                {tier.name} plan
+              </Link>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -205,7 +223,7 @@ const Dashboard = () => {
                 : "Try a different search term."}
             </p>
             {players.length === 0 && (
-              <Button variant="hero" onClick={() => setAddPlayerOpen(true)}>
+              <Button variant="hero" onClick={tryAddPlayer}>
                 <Plus className="w-4 h-4" />
                 Add your first player
               </Button>
@@ -268,6 +286,12 @@ const Dashboard = () => {
         open={!!viewingPlayer}
         onOpenChange={(v) => !v && setViewingPlayer(null)}
         player={viewingPlayer}
+      />
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        title={`You've hit your ${tier.name} player limit`}
+        description={`The ${tier.name} plan supports up to ${tier.playerLimit} players. Upgrade to add more prospects to your board.`}
       />
     </div>
   );
