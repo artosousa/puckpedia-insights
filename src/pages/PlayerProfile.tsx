@@ -113,9 +113,11 @@ const PlayerProfile = () => {
             date_of_birth: player.date_of_birth,
             height_cm: player.height_cm,
             weight_kg: player.weight_kg,
+            player_context: player.player_context,
           },
           team: team?.name ?? null,
           league: league?.name ?? null,
+          level: league?.level ?? null,
           viewings: playerViewings.map((v) => ({
             game_date: v.game_date,
             opponent: v.opponent,
