@@ -7,12 +7,15 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  ArrowLeft, ClipboardCheck, Plus, Target, Activity, BarChart3, Calendar,
+  ArrowLeft, ClipboardCheck, Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -26,6 +29,8 @@ const PlayerProfile = () => {
   const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [viewingOpen, setViewingOpen] = useState(false);
+  const [report, setReport] = useState<string>("");
+  const [reportLoading, setReportLoading] = useState(false);
 
   const player = useMemo(() => players.find((p) => p.id === id) ?? null, [players, id]);
   const team = player?.team_id ? teams.find((t) => t.id === player.team_id) : null;
