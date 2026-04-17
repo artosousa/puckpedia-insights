@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export type League = { id: string; name: string; abbreviation: string | null };
+export type League = { id: string; name: string; abbreviation: string | null; level: string | null };
 export type Team = { id: string; name: string; league_id: string | null };
 export type Player = {
   id: string;
@@ -15,6 +15,7 @@ export type Player = {
   weight_kg: number | null;
   jersey_number: number | null;
   team_id: string | null;
+  player_context: string | null;
   created_at: string;
 };
 export type Viewing = {
