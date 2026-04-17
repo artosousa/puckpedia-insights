@@ -190,6 +190,10 @@ const PlayerProfile = () => {
                 },
               ]}
             />
+            <Button variant="outline" size="sm" onClick={generateReport} disabled={reportLoading || playerViewings.length === 0}>
+              {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {report ? "Regenerate Report" : "AI Report"}
+            </Button>
             <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
               <Plus className="w-4 h-4" />
               New Viewing
