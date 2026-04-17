@@ -1,3 +1,5 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -19,6 +21,7 @@ interface Viewing {
 }
 
 interface Payload {
+  player_id?: string;
   player: {
     first_name: string;
     last_name: string;
@@ -34,6 +37,14 @@ interface Payload {
   viewings: Viewing[];
 }
 
+// Mirror of src/lib/tiers.ts (kept in sync for server-side enforcement)
+const TIER_LIMITS: Record<string, number> = {
+  peewee: 0,
+  junior: 0,
+  minor: 10,
+  pro: Number.POSITIVE_INFINITY,
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -41,11 +52,68 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Authenticate
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const userClient = createClient(SUPABASE_URL, ANON, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const user = userData.user;
+
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    // Resolve tier from subscription
+    const env = Deno.env.get("STRIPE_LIVE_MODE") === "true" ? "live" : "sandbox";
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("product_id,status,current_period_end")
+      .eq("user_id", user.id)
+      .eq("environment", env)
+      .maybeSingle();
+
+    const isActive = !!sub && (sub.status === "active" || sub.status === "trialing") &&
+      (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
+    const tierId = isActive && sub?.product_id ? sub.product_id : "peewee";
+    const limit = TIER_LIMITS[tierId] ?? 0;
+
+    if (limit <= 0) {
+      return new Response(JSON.stringify({
+        error: "AI scouting reports require the Minor or Pro plan.",
+        code: "tier_required",
+      }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Count usage in current calendar month (UTC)
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+    const { count } = await admin
+      .from("ai_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", monthStart);
+
+    const used = count ?? 0;
+    if (isFinite(limit) && used >= limit) {
+      return new Response(JSON.stringify({
+        error: `Monthly AI report limit reached (${used}/${limit}). Upgrade for more.`,
+        code: "limit_reached",
+        used, limit,
+      }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const body = (await req.json()) as Payload;
     if (!body?.player || !Array.isArray(body.viewings)) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -132,7 +200,18 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
     const data = await aiResp.json();
     const report = data?.choices?.[0]?.message?.content ?? "";
 
-    return new Response(JSON.stringify({ report }), {
+    // Log usage (best-effort)
+    if (body.player_id) {
+      await admin.from("ai_reports").insert({ user_id: user.id, player_id: body.player_id });
+    } else {
+      await admin.from("ai_reports").insert({ user_id: user.id, player_id: "00000000-0000-0000-0000-000000000000" });
+    }
+
+    return new Response(JSON.stringify({
+      report,
+      used: used + 1,
+      limit: isFinite(limit) ? limit : null,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

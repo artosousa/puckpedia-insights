@@ -16,18 +16,36 @@ export function useSubscription() {
   const { user } = useAuth();
   const [row, setRow] = useState<SubRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aiReportsThisMonth, setAiReportsThisMonth] = useState(0);
 
   useEffect(() => {
-    if (!user) { setRow(null); setLoading(false); return; }
+    if (!user) { setRow(null); setAiReportsThisMonth(0); setLoading(false); return; }
     let cancelled = false;
+
+    const monthStart = (() => {
+      const n = new Date();
+      return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1)).toISOString();
+    })();
+
     const load = async () => {
-      const { data } = await supabase
-        .from("subscriptions")
-        .select("product_id,status,cancel_at_period_end,current_period_end,stripe_subscription_id")
-        .eq("user_id", user.id)
-        .eq("environment", stripeEnvironment)
-        .maybeSingle();
-      if (!cancelled) { setRow(data as SubRow | null); setLoading(false); }
+      const [subRes, usageRes] = await Promise.all([
+        supabase
+          .from("subscriptions")
+          .select("product_id,status,cancel_at_period_end,current_period_end,stripe_subscription_id")
+          .eq("user_id", user.id)
+          .eq("environment", stripeEnvironment)
+          .maybeSingle(),
+        supabase
+          .from("ai_reports")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gte("created_at", monthStart),
+      ]);
+      if (!cancelled) {
+        setRow(subRes.data as SubRow | null);
+        setAiReportsThisMonth(usageRes.count ?? 0);
+        setLoading(false);
+      }
     };
     load();
 
@@ -35,6 +53,10 @@ export function useSubscription() {
       .channel(`sub:${user.id}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "subscriptions", filter: `user_id=eq.${user.id}` },
+        () => load()
+      )
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "ai_reports", filter: `user_id=eq.${user.id}` },
         () => load()
       )
       .subscribe();
@@ -49,6 +71,11 @@ export function useSubscription() {
     ? TIER_BY_ID[row.product_id as TierId]
     : FREE_TIER;
 
+  const aiReportsRemaining = isFinite(tier.aiReportsPerMonth)
+    ? Math.max(0, tier.aiReportsPerMonth - aiReportsThisMonth)
+    : Infinity;
+  const canGenerateReport = tier.aiReports && aiReportsRemaining > 0;
+
   return {
     loading,
     tier,
@@ -57,5 +84,8 @@ export function useSubscription() {
     cancelAtPeriodEnd: !!row?.cancel_at_period_end,
     currentPeriodEnd: row?.current_period_end ?? null,
     hasStripeSubscription: !!row?.stripe_subscription_id,
+    aiReportsThisMonth,
+    aiReportsRemaining,
+    canGenerateReport,
   };
 }
