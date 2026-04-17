@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import {
   TrendingUp,
   Target,
@@ -212,21 +213,10 @@ const PreviewSection = () => {
               <p className="text-xs text-muted-foreground mb-4">
                 Make the rink your own — every color, fully editable.
               </p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[
-                  "hsl(16, 78%, 57%)",
-                  "hsl(20, 65%, 50%)",
-                  "hsl(210, 40%, 45%)",
-                  "hsl(150, 50%, 45%)",
-                  "hsl(280, 55%, 55%)",
-                ].map((c, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square rounded-md border border-border/50"
-                    style={{ background: c }}
-                  />
-                ))}
-              </div>
+              <ThemeSwatches />
+              <p className="text-[10px] text-muted-foreground/70 mt-3">
+                Click a color to preview it across the site.
+              </p>
             </div>
 
             {/* Watchlist mini stat */}
@@ -260,5 +250,43 @@ const PreviewSection = () => {
     </section>
   );
 };
+
+const THEME_SWATCHES: { label: string; primary: string; accent: string }[] = [
+  { label: "Ember",   primary: "16 78% 57%",  accent: "20 65% 50%" },
+  { label: "Ice",     primary: "210 90% 60%", accent: "200 80% 50%" },
+  { label: "Turf",    primary: "150 60% 45%", accent: "160 55% 40%" },
+  { label: "Royal",   primary: "265 75% 62%", accent: "280 60% 55%" },
+  { label: "Sunset",  primary: "340 80% 60%", accent: "12 85% 60%" },
+];
+
+function ThemeSwatches() {
+  const [active, setActive] = useState(0);
+  const apply = (i: number) => {
+    const s = THEME_SWATCHES[i];
+    const root = document.documentElement;
+    root.style.setProperty("--primary", s.primary);
+    root.style.setProperty("--accent", s.accent);
+    root.style.setProperty("--ring", s.primary);
+    setActive(i);
+  };
+  return (
+    <div className="grid grid-cols-5 gap-1.5">
+      {THEME_SWATCHES.map((s, i) => (
+        <button
+          key={s.label}
+          type="button"
+          onClick={() => apply(i)}
+          aria-label={`Apply ${s.label} theme`}
+          className={`aspect-square rounded-md border transition-all ${
+            active === i
+              ? "border-foreground ring-2 ring-foreground/40 scale-105"
+              : "border-border/50 hover:scale-105 hover:border-border"
+          }`}
+          style={{ background: `hsl(${s.primary})` }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default PreviewSection;
