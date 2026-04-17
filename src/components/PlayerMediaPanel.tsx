@@ -156,6 +156,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       const analysis = (data as any).analysis as string;
       await setMediaAnalysis(m.id, analysis);
       setItems((prev) => prev.map((x) => (x.id === m.id ? { ...x, ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() } : x)));
+      setExpanded((cur) => (cur && cur.id === m.id ? { ...cur, ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() } : cur));
       toast.success("AI analysis complete");
     } catch (e: any) {
       toast.error(e?.message ?? "Analysis failed");
