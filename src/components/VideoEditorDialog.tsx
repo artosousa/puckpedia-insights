@@ -226,13 +226,16 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Video + overlay */}
-          <div className="relative bg-black rounded-lg overflow-hidden mx-auto" style={{ maxHeight: "55vh" }}>
+          {/* Video + overlay — wrapper matches the video's intrinsic aspect ratio so crop coords align exactly. */}
+          <div
+            className="relative bg-black rounded-lg overflow-hidden mx-auto w-full"
+            style={{ maxHeight: "55vh", aspectRatio: String(videoAspect) }}
+          >
             {url ? (
               <video
                 ref={videoRef}
                 src={url}
-                className="w-full max-h-[55vh] object-contain block"
+                className="absolute inset-0 w-full h-full object-cover block"
                 onLoadedMetadata={onLoadedMeta}
                 onTimeUpdate={onTimeUpdate}
                 onPlay={() => setPlaying(true)}
