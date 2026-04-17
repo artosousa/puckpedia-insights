@@ -98,6 +98,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch player + league context for level calibration
+    let level: string | null = null;
+    let playerContext: string | null = null;
+    try {
+      const { data: pl } = await admin
+        .from("players")
+        .select("player_context, team_id")
+        .eq("id", media.player_id)
+        .maybeSingle();
+      playerContext = pl?.player_context ?? null;
+      if (pl?.team_id) {
+        const { data: tm } = await admin
+          .from("teams")
+          .select("league_id")
+          .eq("id", pl.team_id)
+          .maybeSingle();
+        if (tm?.league_id) {
+          const { data: lg } = await admin
+            .from("leagues")
+            .select("level")
+            .eq("id", tm.league_id)
+            .maybeSingle();
+          level = lg?.level ?? null;
+        }
+      }
+    } catch (e) {
+      console.error("context fetch failed", e);
+    }
+
+    const SYSTEM_PROMPT = buildSystemPrompt(level, playerContext);
+
     const { data: fileBlob, error: dlErr } = await admin.storage
       .from("player-media")
       .download(media.storage_path);
@@ -114,7 +145,12 @@ Deno.serve(async (req) => {
     const mime = media.mime_type || (media.kind === "photo" ? "image/jpeg" : "video/mp4");
     const dataUrl = `data:${mime};base64,${b64}`;
 
-    const userText = `Scouting context — tags: ${(media.tags ?? []).join(", ") || "none"}.${
+    const contextHeader = [
+      level ? `Level: ${level}` : null,
+      playerContext ? `Player background: ${playerContext}` : null,
+    ].filter(Boolean).join(" | ");
+
+    const userText = `${contextHeader ? contextHeader + "\n" : ""}Tags: ${(media.tags ?? []).join(", ") || "none"}.${
       media.notes ? ` Notes: ${media.notes}` : ""
     } Analyze this ${media.kind}.`;
 
