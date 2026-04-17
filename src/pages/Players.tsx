@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ClipboardCheck, Plus, Search, ArrowLeft, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
@@ -9,6 +9,7 @@ import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { ExportMenu } from "@/components/ExportMenu";
 
 const Players = () => {
+  const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
