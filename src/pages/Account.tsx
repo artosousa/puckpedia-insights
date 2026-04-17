@@ -112,10 +112,10 @@ const Account = () => {
           )}
 
           {cancelAtPeriodEnd && currentPeriodEnd && (
-            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 mb-4 text-sm">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 rounded-lg bg-primary/10 border border-primary/30 p-3 mb-4 text-sm">
+              <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-amber-200">Cancellation scheduled</p>
+                <p className="font-medium text-foreground">Cancellation scheduled</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   You'll keep {tier.name} access until {new Date(currentPeriodEnd).toLocaleDateString()}, then drop to PeeWee.
                 </p>
