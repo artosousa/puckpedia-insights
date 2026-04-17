@@ -142,6 +142,7 @@ export type Database = {
           last_name: string
           player_context: string | null
           position: string | null
+          scout_confidence: string | null
           shoots: string | null
           team_id: string | null
           updated_at: string
@@ -158,6 +159,7 @@ export type Database = {
           last_name: string
           player_context?: string | null
           position?: string | null
+          scout_confidence?: string | null
           shoots?: string | null
           team_id?: string | null
           updated_at?: string
@@ -174,6 +176,7 @@ export type Database = {
           last_name?: string
           player_context?: string | null
           position?: string | null
+          scout_confidence?: string | null
           shoots?: string | null
           team_id?: string | null
           updated_at?: string
