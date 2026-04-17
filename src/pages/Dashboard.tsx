@@ -206,64 +206,64 @@ const Dashboard = () => {
 
         {/* Sub-nav: quick actions + search */}
         <div className="border-t border-border/50">
-          <div className="container flex items-center justify-between gap-3 h-12 px-6">
-            <div className="flex items-center gap-1">
+          <div className="container flex items-center justify-between gap-3 h-12 px-4 sm:px-6">
+            <div className="hidden md:flex items-center gap-1 min-w-0 overflow-x-auto">
               <button
-                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium bg-primary/10 text-primary"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium bg-primary/10 text-primary shrink-0"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Overview
               </button>
               <button
                 onClick={() => navigate("/players")}
-                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0"
               >
                 <Users className="w-4 h-4" />
                 Browse Players
               </button>
               <button
                 onClick={tryAddPlayer}
-                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0"
               >
                 {atLimit ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 Add Player
               </button>
               <button
                 onClick={() => navigate("/players")}
-                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0"
               >
                 <ClipboardCheck className="w-4 h-4" />
                 New Evaluation
               </button>
               <Link
                 to="/pricing"
-                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0"
               >
                 <Sparkles className="w-4 h-4" />
                 {tier.name} plan
               </Link>
               <Link
                 to="/account"
-                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0"
               >
                 Account
               </Link>
             </div>
-            <div className="relative">
+            <div className="relative flex-1 md:flex-none md:ml-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search players..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-56 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-full md:w-56 focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container px-6 py-8">
+      <main className="container px-4 sm:px-6 py-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <h1 className="font-heading text-2xl font-bold mb-1">Dashboard</h1>
           <p className="text-muted-foreground text-sm mb-8">
