@@ -45,33 +45,36 @@ const TIER_LIMITS: Record<string, number> = {
   pro: Number.POSITIVE_INFINITY,
 };
 
+function respond(payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) return respond({ ok: false, error: "LOVABLE_API_KEY not configured" });
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Authenticate
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(SUPABASE_URL, ANON, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ ok: false, error: "Unauthorized" });
     }
     const user = userData.user;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Read environment from request body (mirrors create-checkout / portal)
     const rawBody = await req.json();
     const env = ((rawBody?.environment as string) || "sandbox") as "sandbox" | "live";
 
@@ -88,13 +91,13 @@ Deno.serve(async (req) => {
     const limit = TIER_LIMITS[tierId] ?? 0;
 
     if (limit <= 0) {
-      return new Response(JSON.stringify({
+      return respond({
+        ok: false,
         error: "AI scouting reports require the Minor or Pro plan.",
         code: "tier_required",
-      }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      });
     }
 
-    // Count usage in current calendar month (UTC)
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
     const { count } = await admin
@@ -105,18 +108,17 @@ Deno.serve(async (req) => {
 
     const used = count ?? 0;
     if (isFinite(limit) && used >= limit) {
-      return new Response(JSON.stringify({
+      return respond({
+        ok: false,
         error: `Monthly AI report limit reached (${used}/${limit}). Upgrade for more.`,
         code: "limit_reached",
         used, limit,
-      }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      });
     }
 
     const body = rawBody as Payload;
     if (!body?.player || !Array.isArray(body.viewings)) {
-      return new Response(JSON.stringify({ error: "Invalid payload" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ ok: false, error: "Invalid payload" });
     }
 
     const { player, team, league, viewings } = body;
@@ -173,7 +175,7 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -182,44 +184,37 @@ Watch list tier suggestion (Tier 1 / 2 / 3 / Pass) with a one-sentence rationale
     });
 
     if (!aiResp.ok) {
+      const t = await aiResp.text().catch(() => "");
+      console.error("AI gateway error", aiResp.status, t);
       if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respond({ ok: false, error: "AI rate limit reached. Please wait a moment and try again.", code: "rate_limit" });
       }
       if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return respond({ ok: false, error: "AI credits exhausted. Add credits in Settings → Workspace → Usage.", code: "no_credits" });
       }
-      const t = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ ok: false, error: `AI gateway error (${aiResp.status}): ${t.slice(0, 200) || "no body"}` });
     }
 
     const data = await aiResp.json();
     const report = data?.choices?.[0]?.message?.content ?? "";
+    if (!report) {
+      return respond({ ok: false, error: "AI returned an empty report. Try again." });
+    }
 
-    // Log usage (best-effort)
     if (body.player_id) {
       await admin.from("ai_reports").insert({ user_id: user.id, player_id: body.player_id });
     } else {
       await admin.from("ai_reports").insert({ user_id: user.id, player_id: "00000000-0000-0000-0000-000000000000" });
     }
 
-    return new Response(JSON.stringify({
+    return respond({
+      ok: true,
       report,
       used: used + 1,
       limit: isFinite(limit) ? limit : null,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("generate-scouting-report error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return respond({ ok: false, error: e instanceof Error ? e.message : "Unknown error" });
   }
 });
