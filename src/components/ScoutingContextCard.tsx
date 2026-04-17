@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useScoutingData, type League, type Player } from "@/hooks/useScoutingData";
 import { toast } from "sonner";
-import type { ConfidenceResult } from "@/lib/scoutConfidence";
+
 
 interface Props {
   player: Player;
