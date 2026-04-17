@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
+import { ExportMenu } from "@/components/ExportMenu";
 
 const Players = () => {
   const { players, teams, leagues, viewings, loading } = useScoutingData();
@@ -48,6 +49,31 @@ const Players = () => {
                 className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-56 focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+            <ExportMenu
+              filename="barnnotes-players"
+              sheets={[
+                {
+                  name: "Players",
+                  rows: players.map((p) => {
+                    const team = p.team_id ? teamMap[p.team_id] : null;
+                    const league = team?.league_id ? leagueMap[team.league_id] : null;
+                    return {
+                      first_name: p.first_name,
+                      last_name: p.last_name,
+                      position: p.position ?? "",
+                      shoots: p.shoots ?? "",
+                      jersey_number: p.jersey_number ?? "",
+                      date_of_birth: p.date_of_birth ?? "",
+                      height_cm: p.height_cm ?? "",
+                      weight_kg: p.weight_kg ?? "",
+                      team: team?.name ?? "",
+                      league: league?.name ?? "",
+                      viewings: viewingsByPlayer[p.id] ?? 0,
+                    };
+                  }),
+                },
+              ]}
+            />
             <Button variant="hero" size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="w-4 h-4" />
               Add Player

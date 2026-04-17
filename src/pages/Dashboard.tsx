@@ -10,6 +10,8 @@ import { useScoutingData } from "@/hooks/useScoutingData";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { ExportMenu } from "@/components/ExportMenu";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -75,6 +77,51 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+            <ExportMenu
+              filename="barnnotes-export"
+              sheets={[
+                {
+                  name: "Players",
+                  rows: players.map((p) => {
+                    const team = p.team_id ? teamMap[p.team_id] : null;
+                    const league = team?.league_id ? leagueMap[team.league_id] : null;
+                    return {
+                      first_name: p.first_name,
+                      last_name: p.last_name,
+                      position: p.position ?? "",
+                      shoots: p.shoots ?? "",
+                      jersey_number: p.jersey_number ?? "",
+                      date_of_birth: p.date_of_birth ?? "",
+                      height_cm: p.height_cm ?? "",
+                      weight_kg: p.weight_kg ?? "",
+                      team: team?.name ?? "",
+                      league: league?.name ?? "",
+                    };
+                  }),
+                },
+                {
+                  name: "Viewings",
+                  rows: viewings.map((v) => {
+                    const player = playerMap[v.player_id];
+                    return {
+                      game_date: v.game_date,
+                      player: player ? `${player.first_name} ${player.last_name}` : "",
+                      opponent: v.opponent ?? "",
+                      location: v.location ?? "",
+                      skating: v.rating_skating ?? "",
+                      shot: v.rating_shot ?? "",
+                      hands: v.rating_hands ?? "",
+                      iq: v.rating_iq ?? "",
+                      compete: v.rating_compete ?? "",
+                      physicality: v.rating_physicality ?? "",
+                      overall: v.rating_overall ?? "",
+                      projection: v.projection ?? "",
+                      notes: v.notes ?? "",
+                    };
+                  }),
+                },
+              ]}
+            />
             <Button variant="hero" size="sm" onClick={() => navigate("/players")}>
               <Plus className="w-4 h-4" />
               New Evaluation
@@ -117,6 +164,8 @@ const Dashboard = () => {
             </motion.div>
           ))}
         </div>
+
+        <DashboardCharts viewings={viewings} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <motion.div
