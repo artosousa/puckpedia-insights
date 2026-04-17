@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Maximize2, Crop } from "lucide-react";
 import { rectAtTime, type MediaEdit } from "@/lib/playerMedia";
 
 interface Props {
   src: string;
   edit?: MediaEdit | null;
-  /** When true, applies the crop/track as a zoom. Defaults to true if any keyframes exist. */
+  /** Initial crop state. Defaults to true if any keyframes exist. */
   applyCrop?: boolean;
+  /** Show the in-player "Full view / Tracked" toggle. Default true when crop exists. */
+  showCropToggle?: boolean;
   className?: string;
   controls?: boolean;
   autoPlay?: boolean;
@@ -15,11 +18,15 @@ interface Props {
  * Plays a video with optional trim (clamps currentTime to in/out) and a crop
  * window that follows interpolated keyframes. The crop is implemented as a CSS
  * transform on the video element so playback stays smooth and free.
+ *
+ * A built-in toggle lets the viewer disable the crop temporarily ("reset to
+ * original") to see the full ice without losing saved keyframes.
  */
 export function TrackedVideo({
   src,
   edit,
   applyCrop,
+  showCropToggle = true,
   className = "",
   controls = true,
   autoPlay = false,
@@ -30,7 +37,15 @@ export function TrackedVideo({
 
   const trim = edit?.trim ?? null;
   const track = edit?.track ?? [];
-  const cropOn = (applyCrop ?? track.length > 0) && track.length > 0;
+  const hasCrop = track.length > 0;
+  const [cropEnabled, setCropEnabled] = useState<boolean>(applyCrop ?? hasCrop);
+
+  // Keep internal toggle in sync if the prop changes (e.g. after editing keyframes)
+  useEffect(() => {
+    setCropEnabled(applyCrop ?? hasCrop);
+  }, [applyCrop, hasCrop]);
+
+  const cropOn = hasCrop && cropEnabled;
 
   // Clamp currentTime to trim window
   useEffect(() => {
@@ -67,17 +82,11 @@ export function TrackedVideo({
     const tick = () => {
       const rect = rectAtTime(track, v.currentTime);
       if (rect) {
-        // Clamp width/height
         const w = Math.max(0.05, Math.min(1, rect.w));
         const h = Math.max(0.05, Math.min(1, rect.h));
         const cx = Math.max(0, Math.min(1, rect.cx));
         const cy = Math.max(0, Math.min(1, rect.cy));
-        // Scale = container/crop. Use min of width/height ratios so the rect fits.
         const scale = Math.min(1 / w, 1 / h);
-        // Translate so that (cx,cy) sits at container center.
-        // After scale, the video extends from -50% to +50% of (originalSize*scale).
-        // We want point (cx,cy) of the source to land at (0.5, 0.5) of the container.
-        // CSS transform-origin is center; translate in % of element's own size.
         const tx = (0.5 - cx) * 100;
         const ty = (0.5 - cy) * 100;
         setTransform(`translate(${tx}%, ${ty}%) scale(${scale})`);
@@ -98,6 +107,29 @@ export function TrackedVideo({
         className="w-full h-full object-contain origin-center"
         style={{ transform, transition: cropOn ? "transform 80ms linear" : "none" }}
       />
+      {hasCrop && showCropToggle && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setCropEnabled((v) => !v);
+          }}
+          className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-black/70 hover:bg-black/85 text-white text-xs font-medium backdrop-blur-sm border border-white/10 shadow-lg transition"
+          title={cropEnabled ? "Show full original video" : "Re-apply tracked crop"}
+        >
+          {cropEnabled ? (
+            <>
+              <Maximize2 className="w-3.5 h-3.5" />
+              Full view
+            </>
+          ) : (
+            <>
+              <Crop className="w-3.5 h-3.5" />
+              Tracked
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
