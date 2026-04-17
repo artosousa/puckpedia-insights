@@ -117,7 +117,7 @@ const Account = () => {
               <div>
                 <p className="font-medium text-foreground">Cancellation scheduled</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  You'll keep {tier.name} access until {new Date(currentPeriodEnd).toLocaleDateString()}, then drop to PeeWee.
+                  You'll keep {tier.name} access until {new Date(currentPeriodEnd).toLocaleDateString()}, then drop to 4th Line.
                 </p>
               </div>
             </div>
@@ -160,7 +160,7 @@ const Account = () => {
           </div>
           {!loading && !hasStripeSubscription && tierId === "peewee" && (
             <p className="text-xs text-muted-foreground mt-4">
-              You're on the free PeeWee plan. Upgrade any time to unlock more players and AI reports.
+              You're on the free 4th Line plan. Upgrade any time to unlock more players and AI reports.
             </p>
           )}
         </section>
