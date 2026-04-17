@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { ClipboardCheck, Plus, Search, ArrowLeft, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useScoutingData, type Player } from "@/hooks/useScoutingData";
 import { AddPlayerDialog } from "@/components/AddPlayerDialog";
 import { NewViewingDialog } from "@/components/NewViewingDialog";
@@ -12,6 +13,7 @@ const Players = () => {
   const navigate = useNavigate();
   const { players, teams, leagues, viewings, loading } = useScoutingData();
   const [query, setQuery] = useState("");
+  const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
 
@@ -25,7 +27,12 @@ const Players = () => {
 
   const filtered = players.filter((p) => {
     const full = `${p.first_name} ${p.last_name}`.toLowerCase();
-    return full.includes(query.toLowerCase());
+    if (!full.includes(query.toLowerCase())) return false;
+    if (leagueFilter !== "all") {
+      const team = p.team_id ? teamMap[p.team_id] : null;
+      if (!team || team.league_id !== leagueFilter) return false;
+    }
+    return true;
   });
 
   return (
@@ -50,6 +57,17 @@ const Players = () => {
                 className="h-9 pl-9 pr-4 rounded-lg bg-secondary border-none text-sm w-56 focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+            <Select value={leagueFilter} onValueChange={setLeagueFilter}>
+              <SelectTrigger className="h-9 w-40 bg-secondary border-none text-sm">
+                <SelectValue placeholder="All leagues" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All leagues</SelectItem>
+                {leagues.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <ExportMenu
               filename="barnnotes-players"
               sheets={[
