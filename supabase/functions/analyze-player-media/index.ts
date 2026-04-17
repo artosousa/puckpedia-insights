@@ -145,10 +145,39 @@ Deno.serve(async (req) => {
     const mime = media.mime_type || (media.kind === "photo" ? "image/jpeg" : "video/mp4");
     const dataUrl = `data:${mime};base64,${b64}`;
 
+    // Extract trim/crop edit metadata so we can constrain analysis to the user-selected window
+    const edit = (media.edit ?? null) as {
+      trimStart?: number | null;
+      trimEnd?: number | null;
+      track?: Array<{ t: number; cx: number; cy: number; w: number; h: number }> | null;
+    } | null;
+    const hasTrim =
+      media.kind === "video" &&
+      edit &&
+      (typeof edit.trimStart === "number" || typeof edit.trimEnd === "number");
+    const trimStart = hasTrim && typeof edit!.trimStart === "number" ? edit!.trimStart! : 0;
+    const trimEnd =
+      hasTrim && typeof edit!.trimEnd === "number"
+        ? edit!.trimEnd!
+        : media.duration_seconds ?? null;
+    const hasCrop = media.kind === "video" && edit?.track && edit.track.length > 0;
+
+    const fmt = (s: number) => `${s.toFixed(1)}s`;
+    const trimLine = hasTrim
+      ? `TRIM WINDOW: Only analyze the segment from ${fmt(trimStart)} to ${
+          trimEnd != null ? fmt(trimEnd) : "end"
+        }. Ignore everything outside this window — the scout has marked it as irrelevant.`
+      : null;
+    const cropLine = hasCrop
+      ? `TRACKED SUBJECT: The scout has drawn a moving crop region following the target player throughout the clip. Focus your assessment on the player inside that region; ignore other skaters.`
+      : null;
+
     const contextHeader = [
       level ? `Level: ${level}` : null,
       playerContext ? `Player background: ${playerContext}` : null,
-    ].filter(Boolean).join(" | ");
+      trimLine,
+      cropLine,
+    ].filter(Boolean).join("\n");
 
     const userText = `${contextHeader ? contextHeader + "\n" : ""}Tags: ${(media.tags ?? []).join(", ") || "none"}.${
       media.notes ? ` Notes: ${media.notes}` : ""
@@ -238,7 +267,7 @@ Deno.serve(async (req) => {
             {
               role: "user",
               content: [
-                { type: "text", text: `Context — tags: ${(media.tags ?? []).join(", ") || "none"}.${media.notes ? ` Notes: ${media.notes}` : ""} Your prior written analysis:\n\n${analysisText}` },
+                { type: "text", text: `${trimLine ? trimLine + "\n" : ""}${cropLine ? cropLine + "\n" : ""}Context — tags: ${(media.tags ?? []).join(", ") || "none"}.${media.notes ? ` Notes: ${media.notes}` : ""} Your prior written analysis:\n\n${analysisText}` },
                 { type: "image_url", image_url: { url: dataUrl } },
               ],
             },
