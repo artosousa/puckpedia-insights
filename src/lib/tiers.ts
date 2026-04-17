@@ -81,7 +81,7 @@ export function mediaCapabilities(tierId: TierId): MediaCapabilities {
     case "junior":
       return { canUploadPhotos: true, canUploadVideos: false, canAiAnalyze: false };
     case "minor":
-      return { canUploadPhotos: true, canUploadVideos: true, canAiAnalyze: false };
+      return { canUploadPhotos: true, canUploadVideos: true, canAiAnalyze: true };
     case "pro":
       return { canUploadPhotos: true, canUploadVideos: true, canAiAnalyze: true };
   }
