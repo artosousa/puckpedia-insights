@@ -49,6 +49,7 @@ type Ctx = {
   createViewing: (input: Omit<Viewing, "id" | "created_at">) => Promise<Viewing>;
   updatePlayer: (id: string, patch: Partial<Player>) => Promise<void>;
   updateLeague: (id: string, patch: Partial<League>) => Promise<void>;
+  updateViewing: (id: string, patch: Partial<Viewing>) => Promise<void>;
 };
 
 const ScoutingContext = createContext<Ctx | null>(null);
