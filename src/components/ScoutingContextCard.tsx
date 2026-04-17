@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { Info, Loader2, Save, Sparkles } from "lucide-react";
+import { Info, Loader2, Save } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useScoutingData, type League, type Player } from "@/hooks/useScoutingData";
 import { toast } from "sonner";
-import type { ConfidenceResult } from "@/lib/scoutConfidence";
+
 
 interface Props {
   player: Player;
   league: League | null;
-  confidence: ConfidenceResult;
 }
 
 const LEVEL_PRESETS = [
@@ -38,13 +37,7 @@ const LEVEL_PRESETS = [
   "Pro (ECHL / AHL / NHL)",
 ];
 
-const CONFIDENCE_STYLE: Record<string, string> = {
-  low: "bg-muted/40 text-muted-foreground border-border",
-  medium: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-  high: "bg-primary/15 text-primary border-primary/40",
-};
-
-export function ScoutingContextCard({ player, league, confidence }: Props) {
+export function ScoutingContextCard({ player, league }: Props) {
   const { updatePlayer, updateLeague } = useScoutingData();
   const [level, setLevel] = useState(league?.level ?? "");
   const [context, setContext] = useState(player.player_context ?? "");
@@ -132,33 +125,6 @@ export function ScoutingContextCard({ player, league, confidence }: Props) {
             onChange={(e) => setContext(e.target.value)}
             placeholder="e.g. 38 yrs old, started playing at 31 (lost 2 yrs to pandemic), forward, plays once a week."
           />
-        </div>
-
-        <div className="space-y-2 md:col-span-2">
-          <Label className="text-xs flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-primary" />
-            Scout Confidence
-            <span className="text-muted-foreground font-normal">
-              · auto-calculated from your viewings + AI clip ratings
-            </span>
-          </Label>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span
-              className={`text-xs px-3 py-1.5 rounded-full border font-semibold uppercase tracking-wide ${
-                CONFIDENCE_STYLE[confidence.level] ?? CONFIDENCE_STYLE.low
-              }`}
-            >
-              {confidence.level}
-            </span>
-            <span className="text-xs text-muted-foreground">{confidence.reason}</span>
-            <span className="text-[10px] text-muted-foreground ml-auto">
-              Score: {confidence.score}/100
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            More viewings + analyzed clips raise confidence. Wildly inconsistent ratings across sources
-            lower it. Log more viewings or analyze more clips to strengthen the read.
-          </p>
         </div>
       </div>
     </section>
