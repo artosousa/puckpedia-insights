@@ -61,65 +61,146 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="container flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-2">
-            <ClipboardCheck className="w-5 h-5 text-primary" />
-            <span className="font-heading text-base font-bold">BarnNotes</span>
+        <div className="container flex items-center justify-between gap-2 h-14 px-4 sm:px-6">
+          <div className="flex items-center gap-2 min-w-0">
+            <ClipboardCheck className="w-5 h-5 text-primary shrink-0" />
+            <span className="font-heading text-base font-bold truncate">BarnNotes</span>
           </div>
-          <div className="flex items-center gap-3">
-            <ExportMenu
-              filename="barnnotes-export"
-              sheets={[
-                {
-                  name: "Players",
-                  rows: players.map((p) => {
-                    const team = p.team_id ? teamMap[p.team_id] : null;
-                    const league = team?.league_id ? leagueMap[team.league_id] : null;
-                    return {
-                      first_name: p.first_name,
-                      last_name: p.last_name,
-                      position: p.position ?? "",
-                      shoots: p.shoots ?? "",
-                      jersey_number: p.jersey_number ?? "",
-                      date_of_birth: p.date_of_birth ?? "",
-                      height_cm: p.height_cm ?? "",
-                      weight_kg: p.weight_kg ?? "",
-                      team: team?.name ?? "",
-                      league: league?.name ?? "",
-                    };
-                  }),
-                },
-                {
-                  name: "Viewings",
-                  rows: viewings.map((v) => {
-                    const player = playerMap[v.player_id];
-                    return {
-                      game_date: v.game_date,
-                      player: player ? `${player.first_name} ${player.last_name}` : "",
-                      opponent: v.opponent ?? "",
-                      location: v.location ?? "",
-                      skating: v.rating_skating ?? "",
-                      shot: v.rating_shot ?? "",
-                      hands: v.rating_hands ?? "",
-                      iq: v.rating_iq ?? "",
-                      compete: v.rating_compete ?? "",
-                      physicality: v.rating_physicality ?? "",
-                      overall: v.rating_overall ?? "",
-                      projection: v.projection ?? "",
-                      notes: v.notes ?? "",
-                    };
-                  }),
-                },
-              ]}
-            />
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:block">
+              <ExportMenu
+                filename="barnnotes-export"
+                sheets={[
+                  {
+                    name: "Players",
+                    rows: players.map((p) => {
+                      const team = p.team_id ? teamMap[p.team_id] : null;
+                      const league = team?.league_id ? leagueMap[team.league_id] : null;
+                      return {
+                        first_name: p.first_name,
+                        last_name: p.last_name,
+                        position: p.position ?? "",
+                        shoots: p.shoots ?? "",
+                        jersey_number: p.jersey_number ?? "",
+                        date_of_birth: p.date_of_birth ?? "",
+                        height_cm: p.height_cm ?? "",
+                        weight_kg: p.weight_kg ?? "",
+                        team: team?.name ?? "",
+                        league: league?.name ?? "",
+                      };
+                    }),
+                  },
+                  {
+                    name: "Viewings",
+                    rows: viewings.map((v) => {
+                      const player = playerMap[v.player_id];
+                      return {
+                        game_date: v.game_date,
+                        player: player ? `${player.first_name} ${player.last_name}` : "",
+                        opponent: v.opponent ?? "",
+                        location: v.location ?? "",
+                        skating: v.rating_skating ?? "",
+                        shot: v.rating_shot ?? "",
+                        hands: v.rating_hands ?? "",
+                        iq: v.rating_iq ?? "",
+                        compete: v.rating_compete ?? "",
+                        physicality: v.rating_physicality ?? "",
+                        overall: v.rating_overall ?? "",
+                        projection: v.projection ?? "",
+                        notes: v.notes ?? "",
+                      };
+                    }),
+                  },
+                ]}
+              />
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={async () => { await signOut(); navigate("/"); }}
               title={user?.email ?? "Log out"}
+              className="hidden sm:inline-flex"
             >
               <LogOut className="w-4 h-4" />
             </Button>
+            {/* Mobile menu trigger */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="md:hidden" aria-label="Open menu">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[85vw] max-w-sm p-0 flex flex-col">
+                <SheetHeader className="px-5 py-4 border-b border-border/50">
+                  <SheetTitle className="text-left flex items-center gap-2">
+                    <ClipboardCheck className="w-5 h-5 text-primary" />
+                    BarnNotes
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
+                  <SheetClose asChild>
+                    <button className="flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium bg-primary/10 text-primary text-left">
+                      <LayoutDashboard className="w-4 h-4" />
+                      Overview
+                    </button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <button
+                      onClick={() => navigate("/players")}
+                      className="flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-left"
+                    >
+                      <Users className="w-4 h-4" />
+                      Browse Players
+                    </button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <button
+                      onClick={tryAddPlayer}
+                      className="flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-left"
+                    >
+                      {atLimit ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      Add Player
+                    </button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <button
+                      onClick={() => navigate("/players")}
+                      className="flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-left"
+                    >
+                      <ClipboardCheck className="w-4 h-4" />
+                      New Evaluation
+                    </button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link
+                      to="/pricing"
+                      className="flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {tier.name} plan
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link
+                      to="/account"
+                      className="flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                    >
+                      Account
+                    </Link>
+                  </SheetClose>
+                </nav>
+                <div className="border-t border-border/50 p-3">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={async () => { await signOut(); navigate("/"); }}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {user?.email ? `Sign out (${user.email})` : "Sign out"}
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
