@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Maximize2, Crop } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { rectAtTime, type MediaEdit } from "@/lib/playerMedia";
 
 interface Props {
   src: string;
   edit?: MediaEdit | null;
-  /** Initial crop state. Defaults to true if any keyframes exist. */
+  /** Force initial crop state. Otherwise defaults to OFF (full view). */
   applyCrop?: boolean;
-  /** Show the in-player "Full view / Tracked" toggle. Default true when crop exists. */
+  /** Show the in-player tracked-preview toggle. Default true when crop exists. */
   showCropToggle?: boolean;
   className?: string;
   controls?: boolean;
@@ -15,12 +15,9 @@ interface Props {
 }
 
 /**
- * Plays a video with optional trim (clamps currentTime to in/out) and a crop
- * window that follows interpolated keyframes. The crop is implemented as a CSS
- * transform on the video element so playback stays smooth and free.
- *
- * A built-in toggle lets the viewer disable the crop temporarily ("reset to
- * original") to see the full ice without losing saved keyframes.
+ * Plays a video with optional trim (clamps currentTime to in/out) and a saved
+ * tracking crop. Default playback shows the FULL original video — the toggle
+ * lets the viewer preview what the AI is actually seeing (the tracked region).
  */
 export function TrackedVideo({
   src,
@@ -38,12 +35,12 @@ export function TrackedVideo({
   const trim = edit?.trim ?? null;
   const track = edit?.track ?? [];
   const hasCrop = track.length > 0;
-  const [cropEnabled, setCropEnabled] = useState<boolean>(applyCrop ?? hasCrop);
+  // Default to FULL view; user toggles to preview the tracked region the AI uses.
+  const [cropEnabled, setCropEnabled] = useState<boolean>(applyCrop ?? false);
 
-  // Keep internal toggle in sync if the prop changes (e.g. after editing keyframes)
   useEffect(() => {
-    setCropEnabled(applyCrop ?? hasCrop);
-  }, [applyCrop, hasCrop]);
+    if (applyCrop !== undefined) setCropEnabled(applyCrop);
+  }, [applyCrop]);
 
   const cropOn = hasCrop && cropEnabled;
 
@@ -69,7 +66,7 @@ export function TrackedVideo({
     };
   }, [trim?.in, trim?.out]);
 
-  // Animate crop transform via rAF
+  // Animate crop transform via rAF when preview is on
   useEffect(() => {
     if (!cropOn) {
       setTransform("none");
@@ -115,17 +112,17 @@ export function TrackedVideo({
             setCropEnabled((v) => !v);
           }}
           className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-black/70 hover:bg-black/85 text-white text-xs font-medium backdrop-blur-sm border border-white/10 shadow-lg transition"
-          title={cropEnabled ? "Show full original video" : "Re-apply tracked crop"}
+          title={cropEnabled ? "Hide AI tracking preview" : "Show what the AI is tracking"}
         >
           {cropEnabled ? (
             <>
-              <Maximize2 className="w-3.5 h-3.5" />
-              Full view
+              <EyeOff className="w-3.5 h-3.5" />
+              Hide AI view
             </>
           ) : (
             <>
-              <Crop className="w-3.5 h-3.5" />
-              Tracked
+              <Eye className="w-3.5 h-3.5" />
+              Show AI view
             </>
           )}
         </button>
