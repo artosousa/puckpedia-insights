@@ -323,7 +323,7 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
                 setTrimOut(Math.max(a, b));
               }}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => setTrimIn(currentTime)}>
                 Set in @ playhead
               </Button>
