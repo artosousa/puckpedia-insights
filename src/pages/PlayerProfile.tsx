@@ -7,7 +7,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2,
+  Plus, Target, Activity, BarChart3, Calendar, Sparkles, Loader2, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScoutingData } from "@/hooks/useScoutingData";
