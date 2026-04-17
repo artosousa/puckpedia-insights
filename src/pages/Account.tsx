@@ -9,6 +9,7 @@ import { TIER_BY_ID, aiReportsLimitLabel } from "@/lib/tiers";
 import { openBillingPortal } from "@/lib/stripe";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { AppHeader } from "@/components/AppHeader";
+import { ThemeEditor } from "@/components/ThemeEditor";
 import { toast } from "sonner";
 
 const Account = () => {
