@@ -376,32 +376,36 @@ function MediaCard({
           </div>
         )}
         {media.notes && <p className="text-xs text-muted-foreground line-clamp-2">{media.notes}</p>}
-        {media.ai_analysis ? (
-          <div className="text-xs bg-background/50 p-2 rounded border border-border/30 max-h-32 overflow-y-auto">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1 text-primary">
-                <Sparkles className="w-3 h-3" />
-                <span className="font-semibold">AI analysis</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {canAiAnalyze && (
-                  <button
-                    onClick={onAnalyze}
-                    disabled={analyzing}
-                    className="text-[10px] text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                    Re-analyze
+        {media.ai_analysis ? (() => {
+          const parsed = parseRatings(media.ai_analysis);
+          return (
+            <div className="text-xs bg-background/50 p-2 rounded border border-border/30 max-h-72 overflow-y-auto space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-primary">
+                  <Sparkles className="w-3 h-3" />
+                  <span className="font-semibold">AI analysis</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {canAiAnalyze && (
+                    <button
+                      onClick={onAnalyze}
+                      disabled={analyzing}
+                      className="text-[10px] text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {analyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      Re-analyze
+                    </button>
+                  )}
+                  <button onClick={onExpand} className="text-[10px] text-primary hover:underline">
+                    Expand
                   </button>
-                )}
-                <button onClick={onExpand} className="text-[10px] text-primary hover:underline">
-                  Expand
-                </button>
+                </div>
               </div>
+              {parsed.ratings && <CompactRatings ratings={parsed.ratings} />}
+              <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{parsed.text}</p>
             </div>
-            <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{parseRatings(media.ai_analysis).text}</p>
-          </div>
-        ) : (
+          );
+        })() : (
           canAiAnalyze && (
             <Button size="sm" variant="outline" onClick={onAnalyze} disabled={analyzing} className="mt-auto">
               {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
