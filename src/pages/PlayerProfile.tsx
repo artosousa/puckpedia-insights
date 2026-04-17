@@ -208,7 +208,7 @@ const PlayerProfile = () => {
               disabled={reportLoading || (canGenerateReport && playerViewings.length === 0)}
               title={
                 !tier.aiReports
-                  ? "AI reports are available on Minor and Pro plans"
+                  ? "AI reports are available on 2nd Line and 1st Line plans"
                   : aiReportsRemaining <= 0
                   ? `Monthly limit reached (${aiReportsThisMonth}/${tier.aiReportsPerMonth})`
                   : undefined

@@ -43,7 +43,7 @@ const Pricing = () => {
     // Downgrading to free PeeWee — must cancel via portal (no $0 Stripe price)
     if (tier.id === "peewee") {
       if (!hasStripeSubscription) return;
-      await openPortal("Cancel your current plan in the portal — you'll keep access until your renewal date, then drop to PeeWee.");
+      await openPortal("Cancel your current plan in the portal — you'll keep access until your renewal date, then drop to 4th Line.");
       return;
     }
     // Existing subscriber switching paid tiers — use portal
@@ -82,7 +82,7 @@ const Pricing = () => {
             Pick your line.
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            From PeeWee to Pro — scale your scouting workflow as your prospect list grows.
+            From 4th Line to 1st Line — scale your scouting workflow as your prospect list grows.
           </p>
         </motion.div>
 
