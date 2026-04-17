@@ -71,8 +71,10 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Resolve tier from subscription
-    const env = Deno.env.get("STRIPE_LIVE_MODE") === "true" ? "live" : "sandbox";
+    // Read environment from request body (mirrors create-checkout / portal)
+    const rawBody = await req.json();
+    const env = ((rawBody?.environment as string) || "sandbox") as "sandbox" | "live";
+
     const { data: sub } = await admin
       .from("subscriptions")
       .select("product_id,status,current_period_end")
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
       }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const body = (await req.json()) as Payload;
+    const body = rawBody as Payload;
     if (!body?.player || !Array.isArray(body.viewings)) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

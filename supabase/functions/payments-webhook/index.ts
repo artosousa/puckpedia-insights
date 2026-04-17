@@ -33,11 +33,8 @@ serve(async (req) => {
 
       const item = sub.items?.data?.[0];
       const priceObj = item?.price;
-      const productId = typeof priceObj?.product === "string" ? priceObj.product : priceObj?.product?.id;
       const lookupKey = priceObj?.lookup_key ?? null;
-
-      // Map Stripe product ID back to our human-readable product_id via the price lookup_key prefix
-      // Our price_ids are <product>_monthly|_yearly
+      // Map Stripe product back to our human-readable product_id via lookup_key prefix
       const ourProductId = lookupKey?.replace(/_(monthly|yearly)$/, "") ?? null;
 
       await supabase.from("subscriptions").upsert({
@@ -52,6 +49,16 @@ serve(async (req) => {
         current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
+    } else if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object;
+      const subId = invoice.subscription;
+      if (subId) {
+        await supabase
+          .from("subscriptions")
+          .update({ status: "past_due", updated_at: new Date().toISOString() })
+          .eq("stripe_subscription_id", subId)
+          .eq("environment", env);
+      }
     }
 
     return new Response("ok", { status: 200 });
