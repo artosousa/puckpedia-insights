@@ -1,0 +1,368 @@
+import { useEffect, useRef, useState } from "react";
+import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import { mediaCapabilities, MEDIA_LIMITS, SKILL_TAGS } from "@/lib/tiers";
+import {
+  deletePlayerMedia,
+  getSignedUrl,
+  getVideoDuration,
+  listPlayerMedia,
+  setMediaAnalysis,
+  uploadPlayerMedia,
+  type PlayerMedia,
+} from "@/lib/playerMedia";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Props {
+  playerId: string;
+  viewingId?: string | null;
+  /** When true, only show media tied to viewingId (or all when null). */
+  scope?: "all" | "viewing" | "gallery";
+  title?: string;
+}
+
+export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", title = "Media" }: Props) {
+  const { user } = useAuth();
+  const { tierId } = useSubscription();
+  const caps = mediaCapabilities(tierId);
+  const [items, setItems] = useState<PlayerMedia[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState("");
+  const [notes, setNotes] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const load = async () => {
+    try {
+      const all = await listPlayerMedia(playerId);
+      const filtered = all.filter((m) => {
+        if (scope === "viewing") return m.viewing_id === viewingId;
+        if (scope === "gallery") return m.viewing_id == null;
+        return true;
+      });
+      setItems(filtered);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not load media");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerId, viewingId, scope]);
+
+  const toggleTag = (t: string) =>
+    setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (!t || tags.includes(t)) return;
+    setTags((p) => [...p, t]);
+    setCustomTag("");
+  };
+
+  const onFiles = async (files: FileList | null) => {
+    if (!files || !user) return;
+    const list = Array.from(files);
+    setUploading(true);
+    try {
+      for (const file of list) {
+        const isVideo = file.type.startsWith("video/");
+        const isImage = file.type.startsWith("image/");
+        if (!isVideo && !isImage) {
+          toast.error(`${file.name}: unsupported file type`);
+          continue;
+        }
+        if (isVideo && !caps.canUploadVideos) {
+          toast.error("Videos require 2nd Line or 1st Line plan");
+          continue;
+        }
+        if (isImage && !caps.canUploadPhotos) {
+          toast.error("Photos are not enabled on your plan");
+          continue;
+        }
+        if (isImage && file.size > MEDIA_LIMITS.photoMaxBytes) {
+          toast.error(`${file.name}: photo exceeds 10 MB`);
+          continue;
+        }
+        if (isVideo && file.size > MEDIA_LIMITS.videoMaxBytes) {
+          toast.error(`${file.name}: video exceeds 100 MB`);
+          continue;
+        }
+        let duration: number | null = null;
+        if (isVideo) {
+          duration = await getVideoDuration(file);
+          if (duration > MEDIA_LIMITS.videoMaxSeconds + 1) {
+            toast.error(`${file.name}: video exceeds 60s (${Math.round(duration)}s)`);
+            continue;
+          }
+        }
+        await uploadPlayerMedia({
+          file,
+          userId: user.id,
+          playerId,
+          viewingId: viewingId ?? null,
+          kind: isVideo ? "video" : "photo",
+          tags,
+          notes: notes || null,
+          durationSeconds: duration,
+        });
+      }
+      toast.success("Upload complete");
+      setTags([]);
+      setNotes("");
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const onDelete = async (m: PlayerMedia) => {
+    if (!confirm("Delete this media?")) return;
+    try {
+      await deletePlayerMedia(m);
+      setItems((prev) => prev.filter((x) => x.id !== m.id));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Delete failed");
+    }
+  };
+
+  const onAnalyze = async (m: PlayerMedia) => {
+    if (!caps.canAiAnalyze) {
+      toast.error("AI analysis is available on the 1st Line plan");
+      return;
+    }
+    setAnalyzingId(m.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-player-media", {
+        body: { media_id: m.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const analysis = (data as any).analysis as string;
+      await setMediaAnalysis(m.id, analysis);
+      setItems((prev) => prev.map((x) => (x.id === m.id ? { ...x, ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() } : x)));
+      toast.success("AI analysis complete");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Analysis failed");
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
+  const accept = caps.canUploadVideos ? "image/*,video/*" : caps.canUploadPhotos ? "image/*" : "";
+
+  return (
+    <section className="glass-card rounded-xl p-6">
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <h3 className="font-heading text-base font-semibold flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-primary" />
+            {title}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {caps.canUploadVideos ? "Photos ≤10 MB · Videos ≤100 MB / 60s" : "Photos ≤10 MB · Upgrade for video"}
+            {caps.canAiAnalyze ? " · AI analysis enabled" : ""}
+          </p>
+        </div>
+        {accept && (
+          <Button
+            variant="hero"
+            size="sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            Upload
+          </Button>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept={accept}
+          multiple
+          className="hidden"
+          onChange={(e) => onFiles(e.target.files)}
+        />
+      </div>
+
+      {accept && (
+        <div className="mb-5 p-4 rounded-lg bg-surface-sunken border border-border/50">
+          <p className="text-xs text-muted-foreground mb-2">Tags applied to next upload</p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {SKILL_TAGS.map((t) => (
+              <button
+                key={t}
+                onClick={() => toggleTag(t)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                  tags.includes(t)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+            {tags
+              .filter((t) => !SKILL_TAGS.includes(t as any))
+              .map((t) => (
+                <span
+                  key={t}
+                  className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 flex items-center gap-1"
+                >
+                  {t}
+                  <button onClick={() => toggleTag(t)} aria-label={`Remove ${t}`}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
+              placeholder="Add custom tag (e.g. zone-entry, PP1)"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustomTag();
+                }
+              }}
+              className="text-xs h-8"
+            />
+            <Button size="sm" variant="outline" onClick={addCustomTag} disabled={!customTag.trim()}>
+              Add
+            </Button>
+          </div>
+          <Textarea
+            rows={2}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Optional caption / context"
+            className="mt-3 text-xs"
+          />
+        </div>
+      )}
+
+      {!caps.canUploadVideos && (
+        <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/30 text-xs flex items-start gap-2">
+          <Lock className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+          <span><strong>2nd Line</strong> unlocks video uploads. <strong>1st Line</strong> adds AI analysis of photos and videos.</span>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">Loading media…</div>
+      ) : items.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-8 text-center">No media yet.</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((m) => (
+            <MediaCard
+              key={m.id}
+              media={m}
+              onDelete={() => onDelete(m)}
+              onAnalyze={() => onAnalyze(m)}
+              analyzing={analyzingId === m.id}
+              canAiAnalyze={caps.canAiAnalyze}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MediaCard({
+  media,
+  onDelete,
+  onAnalyze,
+  analyzing,
+  canAiAnalyze,
+}: {
+  media: PlayerMedia;
+  onDelete: () => void;
+  onAnalyze: () => void;
+  analyzing: boolean;
+  canAiAnalyze: boolean;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSignedUrl(media.storage_path).then((u) => {
+      if (!cancelled) setUrl(u);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [media.storage_path]);
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-surface-sunken overflow-hidden flex flex-col">
+      <div className="aspect-video bg-black/40 flex items-center justify-center">
+        {url ? (
+          media.kind === "photo" ? (
+            <img src={url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <video src={url} controls className="w-full h-full object-contain" />
+          )
+        ) : (
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        )}
+      </div>
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            {media.kind === "photo" ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+            {media.kind}
+            {media.duration_seconds ? ` · ${Math.round(media.duration_seconds)}s` : ""}
+          </span>
+          <button
+            onClick={onDelete}
+            className="text-muted-foreground hover:text-destructive transition"
+            aria-label="Delete"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {media.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {media.tags.map((t) => (
+              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+        {media.notes && <p className="text-xs text-muted-foreground line-clamp-2">{media.notes}</p>}
+        {media.ai_analysis ? (
+          <div className="text-xs bg-background/50 p-2 rounded border border-border/30 max-h-32 overflow-y-auto">
+            <div className="flex items-center gap-1 mb-1 text-primary">
+              <Sparkles className="w-3 h-3" />
+              <span className="font-semibold">AI analysis</span>
+            </div>
+            <p className="text-muted-foreground whitespace-pre-wrap">{media.ai_analysis}</p>
+          </div>
+        ) : (
+          canAiAnalyze && (
+            <Button size="sm" variant="outline" onClick={onAnalyze} disabled={analyzing} className="mt-auto">
+              {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              Analyze with AI
+            </Button>
+          )
+        )}
+      </div>
+    </div>
+  );
+}

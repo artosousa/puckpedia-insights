@@ -67,3 +67,30 @@ export function aiReportsLimitLabel(tier: Tier): string {
   if (!isFinite(tier.aiReportsPerMonth)) return "Unlimited";
   return `${tier.aiReportsPerMonth} / month`;
 }
+
+// Media capabilities by tier
+export interface MediaCapabilities {
+  canUploadPhotos: boolean;
+  canUploadVideos: boolean;
+  canAiAnalyze: boolean;
+}
+
+export function mediaCapabilities(tierId: TierId): MediaCapabilities {
+  switch (tierId) {
+    case "peewee":
+    case "junior":
+      return { canUploadPhotos: true, canUploadVideos: false, canAiAnalyze: false };
+    case "minor":
+      return { canUploadPhotos: true, canUploadVideos: true, canAiAnalyze: false };
+    case "pro":
+      return { canUploadPhotos: true, canUploadVideos: true, canAiAnalyze: true };
+  }
+}
+
+export const MEDIA_LIMITS = {
+  photoMaxBytes: 10 * 1024 * 1024,        // 10 MB
+  videoMaxBytes: 100 * 1024 * 1024,       // 100 MB
+  videoMaxSeconds: 60,
+};
+
+export const SKILL_TAGS = ["Skating", "Shot", "Hands", "IQ", "Compete", "Physicality"] as const;
