@@ -24,6 +24,8 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
+  /** Intrinsic video aspect ratio (width / height). Drives crop aspect + container aspect. */
+  const [videoAspect, setVideoAspect] = useState<number>(16 / 9);
 
   const [trimIn, setTrimIn] = useState(0);
   const [trimOut, setTrimOut] = useState(0);
@@ -31,7 +33,7 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
 
   const [drawingRect, setDrawingRect] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
-  const [draggingId, setDraggingId] = useState<number | null>(null); // index of keyframe being dragged
+  const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -61,6 +63,9 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
     if (!v) return;
     const d = isFinite(v.duration) ? v.duration : 0;
     setDuration(d);
+    if (v.videoWidth && v.videoHeight) {
+      setVideoAspect(v.videoWidth / v.videoHeight);
+    }
     const e = (media?.edit ?? {}) as MediaEdit;
     if (!e.trim) {
       setTrimIn(0);
@@ -146,12 +151,25 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
       return;
     }
     if (drawingRect) {
-      const w = Math.abs(drawingRect.x2 - drawingRect.x1);
-      const h = Math.abs(drawingRect.y2 - drawingRect.y1);
-      if (w > 0.03 && h > 0.03) {
+      const rawW = Math.abs(drawingRect.x2 - drawingRect.x1);
+      const rawH = Math.abs(drawingRect.y2 - drawingRect.y1);
+      if (rawW > 0.03 && rawH > 0.03) {
         const cx = (drawingRect.x1 + drawingRect.x2) / 2;
         const cy = (drawingRect.y1 + drawingRect.y2) / 2;
-        addOrReplaceKeyframe({ t: currentTime, cx, cy, w, h });
+        // Constrain crop to the video's aspect ratio (overlay is already sized to that aspect).
+        // overlay aspect == video aspect, so width/height in normalized coords share the same scale.
+        // Pick the smaller dimension as the constraint, then derive the other.
+        let w = rawW;
+        let h = rawH;
+        // crop aspect (in overlay-normalized units) should equal 1 (since overlay matches video aspect)
+        if (w > h) h = w;
+        else w = h;
+        // clamp inside [0,1] given the center
+        w = Math.min(w, 2 * cx, 2 * (1 - cx));
+        h = Math.min(h, 2 * cy, 2 * (1 - cy));
+        // re-square after clamping
+        const side = Math.min(w, h);
+        addOrReplaceKeyframe({ t: currentTime, cx, cy, w: side, h: side });
       }
       setDrawingRect(null);
     }
@@ -208,13 +226,16 @@ export function VideoEditorDialog({ media, onClose, onSaved }: Props) {
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Video + overlay */}
-          <div className="relative bg-black rounded-lg overflow-hidden mx-auto" style={{ maxHeight: "55vh" }}>
+          {/* Video + overlay — wrapper matches the video's intrinsic aspect ratio so crop coords align exactly. */}
+          <div
+            className="relative bg-black rounded-lg overflow-hidden mx-auto w-full"
+            style={{ maxHeight: "55vh", aspectRatio: String(videoAspect) }}
+          >
             {url ? (
               <video
                 ref={videoRef}
                 src={url}
-                className="w-full max-h-[55vh] object-contain block"
+                className="absolute inset-0 w-full h-full object-cover block"
                 onLoadedMetadata={onLoadedMeta}
                 onTimeUpdate={onTimeUpdate}
                 onPlay={() => setPlaying(true)}

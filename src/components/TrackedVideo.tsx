@@ -31,11 +31,12 @@ export function TrackedVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState<string>("none");
+  /** Intrinsic video aspect ratio. Used to size the container so transform coords align. */
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
 
   const trim = edit?.trim ?? null;
   const track = edit?.track ?? [];
   const hasCrop = track.length > 0;
-  // Default to FULL view; user toggles to preview the tracked region the AI uses.
   const [cropEnabled, setCropEnabled] = useState<boolean>(applyCrop ?? false);
 
   useEffect(() => {
@@ -44,14 +45,16 @@ export function TrackedVideo({
 
   const cropOn = hasCrop && cropEnabled;
 
-  // Clamp currentTime to trim window
+  // Capture video aspect + clamp currentTime to trim window
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || !trim) return;
+    if (!v) return;
     const onLoaded = () => {
-      if (v.currentTime < trim.in) v.currentTime = trim.in;
+      if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+      if (trim && v.currentTime < trim.in) v.currentTime = trim.in;
     };
     const onTimeUpdate = () => {
+      if (!trim) return;
       if (v.currentTime < trim.in) v.currentTime = trim.in;
       if (v.currentTime > trim.out) {
         v.pause();
@@ -95,13 +98,17 @@ export function TrackedVideo({
   }, [cropOn, JSON.stringify(track)]);
 
   return (
-    <div ref={containerRef} className={`relative overflow-hidden bg-black ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative overflow-hidden bg-black ${className}`}
+      style={cropOn && videoAspect ? { aspectRatio: String(videoAspect) } : undefined}
+    >
       <video
         ref={videoRef}
         src={src}
         controls={controls}
         autoPlay={autoPlay}
-        className="w-full h-full object-contain origin-center"
+        className={`w-full h-full origin-center ${cropOn ? "object-cover" : "object-contain"}`}
         style={{ transform, transition: cropOn ? "transform 80ms linear" : "none" }}
       />
       {hasCrop && showCropToggle && (
