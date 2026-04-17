@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X } from "lucide-react";
+import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [tags, setTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState("");
   const [notes, setNotes] = useState("");
+  const [expanded, setExpanded] = useState<PlayerMedia | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -154,6 +156,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       const analysis = (data as any).analysis as string;
       await setMediaAnalysis(m.id, analysis);
       setItems((prev) => prev.map((x) => (x.id === m.id ? { ...x, ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() } : x)));
+      setExpanded((cur) => (cur && cur.id === m.id ? { ...cur, ai_analysis: analysis, ai_analyzed_at: new Date().toISOString() } : cur));
       toast.success("AI analysis complete");
     } catch (e: any) {
       toast.error(e?.message ?? "Analysis failed");
@@ -277,10 +280,19 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
               onAnalyze={() => onAnalyze(m)}
               analyzing={analyzingId === m.id}
               canAiAnalyze={caps.canAiAnalyze}
+              onExpand={() => setExpanded(m)}
             />
           ))}
         </div>
       )}
+
+      <MediaViewerDialog
+        media={expanded}
+        onClose={() => setExpanded(null)}
+        onAnalyze={expanded ? () => onAnalyze(expanded) : () => {}}
+        analyzing={expanded ? analyzingId === expanded.id : false}
+        canAiAnalyze={caps.canAiAnalyze}
+      />
     </section>
   );
 }
@@ -291,12 +303,14 @@ function MediaCard({
   onAnalyze,
   analyzing,
   canAiAnalyze,
+  onExpand,
 }: {
   media: PlayerMedia;
   onDelete: () => void;
   onAnalyze: () => void;
   analyzing: boolean;
   canAiAnalyze: boolean;
+  onExpand: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
 
@@ -310,16 +324,23 @@ function MediaCard({
 
   return (
     <div className="rounded-lg border border-border/50 bg-surface-sunken overflow-hidden flex flex-col">
-      <div className="aspect-video bg-black/40 flex items-center justify-center">
+      <div className="relative aspect-video bg-black/40 flex items-center justify-center group">
         {url ? (
           media.kind === "photo" ? (
-            <img src={url} alt="" className="w-full h-full object-cover" />
+            <img src={url} alt="" className="w-full h-full object-cover cursor-zoom-in" onClick={onExpand} />
           ) : (
             <video src={url} controls className="w-full h-full object-contain" />
           )
         ) : (
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         )}
+        <button
+          onClick={onExpand}
+          className="absolute top-2 right-2 p-1.5 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition hover:bg-black/80"
+          aria-label="Expand"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div className="p-3 flex flex-col gap-2 flex-1">
         <div className="flex items-center justify-between gap-2">
@@ -328,13 +349,22 @@ function MediaCard({
             {media.kind}
             {media.duration_seconds ? ` · ${Math.round(media.duration_seconds)}s` : ""}
           </span>
-          <button
-            onClick={onDelete}
-            className="text-muted-foreground hover:text-destructive transition"
-            aria-label="Delete"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onExpand}
+              className="text-muted-foreground hover:text-primary transition"
+              aria-label="Expand"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="text-muted-foreground hover:text-destructive transition"
+              aria-label="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
         {media.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
@@ -348,11 +378,16 @@ function MediaCard({
         {media.notes && <p className="text-xs text-muted-foreground line-clamp-2">{media.notes}</p>}
         {media.ai_analysis ? (
           <div className="text-xs bg-background/50 p-2 rounded border border-border/30 max-h-32 overflow-y-auto">
-            <div className="flex items-center gap-1 mb-1 text-primary">
-              <Sparkles className="w-3 h-3" />
-              <span className="font-semibold">AI analysis</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1 text-primary">
+                <Sparkles className="w-3 h-3" />
+                <span className="font-semibold">AI analysis</span>
+              </div>
+              <button onClick={onExpand} className="text-[10px] text-primary hover:underline">
+                Expand
+              </button>
             </div>
-            <p className="text-muted-foreground whitespace-pre-wrap">{media.ai_analysis}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap line-clamp-4">{media.ai_analysis}</p>
           </div>
         ) : (
           canAiAnalyze && (
@@ -365,4 +400,126 @@ function MediaCard({
       </div>
     </div>
   );
+}
+
+function MediaViewerDialog({
+  media,
+  onClose,
+  onAnalyze,
+  analyzing,
+  canAiAnalyze,
+}: {
+  media: PlayerMedia | null;
+  onClose: () => void;
+  onAnalyze: () => void;
+  analyzing: boolean;
+  canAiAnalyze: boolean;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!media) {
+      setUrl(null);
+      return;
+    }
+    let cancelled = false;
+    getSignedUrl(media.storage_path).then((u) => {
+      if (!cancelled) setUrl(u);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [media?.storage_path]);
+
+  const sections = parseAnalysis(media?.ai_analysis ?? "");
+
+  return (
+    <Dialog open={!!media} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[92vh] overflow-hidden p-0 flex flex-col">
+        <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/50">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            {media?.kind === "photo" ? <ImageIcon className="w-4 h-4 text-primary" /> : <Video className="w-4 h-4 text-primary" />}
+            {media?.kind === "photo" ? "Photo" : "Video"} review
+            {media?.duration_seconds ? <span className="text-xs text-muted-foreground font-normal">· {Math.round(media.duration_seconds)}s</span> : null}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] flex-1 min-h-0 overflow-hidden">
+          <div className="bg-black flex items-center justify-center min-h-[280px] lg:min-h-0">
+            {url && media ? (
+              media.kind === "photo" ? (
+                <img src={url} alt="" className="max-w-full max-h-[80vh] object-contain" />
+              ) : (
+                <video src={url} controls autoPlay className="max-w-full max-h-[80vh]" />
+              )
+            ) : (
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <div className="overflow-y-auto p-6 space-y-4 bg-surface-sunken">
+            {media?.tags && media.tags.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Tags</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {media.tags.map((t) => (
+                    <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {media?.notes && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Notes</p>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{media.notes}</p>
+              </div>
+            )}
+            {media?.ai_analysis ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-1.5 text-primary">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="text-sm font-semibold">AI analysis</span>
+                </div>
+                {sections.length > 0 ? (
+                  sections.map((s) => (
+                    <div key={s.heading} className="rounded-lg border border-border/50 bg-background/60 p-3">
+                      <p className="text-xs font-semibold text-foreground mb-1.5">{s.heading}</p>
+                      <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{s.body}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{media.ai_analysis}</p>
+                )}
+              </div>
+            ) : (
+              canAiAnalyze && media && (
+                <Button onClick={onAnalyze} disabled={analyzing} variant="hero" className="w-full">
+                  {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Analyze with AI
+                </Button>
+              )
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function parseAnalysis(text: string): { heading: string; body: string }[] {
+  if (!text) return [];
+  const known = ["Observations", "Areas to Improve", "Recommended Resources"];
+  const lines = text.split("\n");
+  const sections: { heading: string; body: string[] }[] = [];
+  let current: { heading: string; body: string[] } | null = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    const match = known.find((h) => line.toLowerCase() === h.toLowerCase() || line.toLowerCase().startsWith(h.toLowerCase() + ":"));
+    if (match) {
+      if (current) sections.push(current);
+      current = { heading: match, body: [] };
+    } else if (current) {
+      current.body.push(raw);
+    }
+  }
+  if (current) sections.push(current);
+  return sections.map((s) => ({ heading: s.heading, body: s.body.join("\n").trim() })).filter((s) => s.body);
 }
