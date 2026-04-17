@@ -31,9 +31,11 @@ interface Payload {
     date_of_birth?: string | null;
     height_cm?: number | null;
     weight_kg?: number | null;
+    player_context?: string | null;
   };
   team?: string | null;
   league?: string | null;
+  level?: string | null;
   viewings: Viewing[];
 }
 
