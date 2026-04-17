@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { FREE_TIER, TIER_BY_ID, type Tier, type TierId } from "@/lib/tiers";
+import { TIER_BY_ID, type Tier } from "@/lib/tiers";
 import { stripeEnvironment } from "@/lib/stripe";
 
 interface SubRow {
