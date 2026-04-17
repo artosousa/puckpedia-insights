@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useSubscription } from "@/hooks/useSubscription";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { PlayerMediaPanel } from "@/components/PlayerMediaPanel";
 
 const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
 
@@ -393,6 +394,10 @@ const PlayerProfile = () => {
             </div>
           </>
         )}
+
+        <div className="mt-8">
+          <PlayerMediaPanel playerId={player.id} scope="all" title="Player Media" />
+        </div>
       </main>
 
       <NewViewingDialog
