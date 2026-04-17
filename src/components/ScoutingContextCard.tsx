@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Info, Loader2, Save, Sparkles } from "lucide-react";
+import { Info, Loader2, Save } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
