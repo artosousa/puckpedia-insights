@@ -250,6 +250,30 @@ const PlayerProfile = () => {
           </div>
         ) : (
           <>
+            {(report || reportLoading) && (
+              <div className="glass-card rounded-xl p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-heading text-base font-semibold flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    AI Scouting Report
+                  </h3>
+                  {report && (
+                    <span className="text-xs text-muted-foreground">Included in exports</span>
+                  )}
+                </div>
+                {reportLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing viewings and generating report...
+                  </div>
+                ) : (
+                  <div className="prose prose-sm prose-invert max-w-none prose-headings:font-heading prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground">
+                    <ReactMarkdown>{report}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
               <div className="glass-card rounded-xl p-6">
                 <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
