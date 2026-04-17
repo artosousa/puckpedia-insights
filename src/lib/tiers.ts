@@ -46,7 +46,7 @@ export const TIERS: Tier[] = [
   },
   {
     id: "pro",
-    name: "The McJesus",
+    name: "McJesus",
     tagline: "Unlimited players + unlimited AI reports.",
     playerLimit: Infinity,
     aiReports: true,
