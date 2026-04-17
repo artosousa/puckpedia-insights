@@ -482,7 +482,9 @@ function MediaViewerDialog({
                   sections.map((s) => (
                     <div key={s.heading} className="rounded-lg border border-border/50 bg-background/60 p-3">
                       <p className="text-xs font-semibold text-foreground mb-1.5">{s.heading}</p>
-                      <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{s.body}</p>
+                      <div className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                        {renderWithYouTubeLinks(s.body)}
+                      </div>
                     </div>
                   ))
                 ) : (
