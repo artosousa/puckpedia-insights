@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2, Crop } from "lucide-react";
+import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2, Crop, Link2, ExternalLink } from "lucide-react";
 import { TrackedVideo } from "@/components/TrackedVideo";
 import { VideoEditorDialog } from "@/components/VideoEditorDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { mediaCapabilities, MEDIA_LIMITS, SKILL_TAGS } from "@/lib/tiers";
 import {
+  addPlayerMediaByUrl,
+  classifyVideoUrl,
   deletePlayerMedia,
   extractVideoAnalysisFrame,
+  getPlayableUrl,
   getSignedUrl,
   getVideoDuration,
   listPlayerMedia,
@@ -41,6 +44,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<PlayerMedia | null>(null);
   const [editing, setEditing] = useState<PlayerMedia | null>(null);
+  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   /** IDs of items just uploaded that still need tags. */
   const [pendingTagIds, setPendingTagIds] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -147,8 +151,10 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
     }
     setAnalyzingId(m.id);
     try {
-      const frameCapture = m.kind === "video"
-        ? await extractVideoAnalysisFrame(m)
+      // Linked videos (source_url) are sent straight to the model — no client frame needed.
+      const isLinked = !!m.source_url && !m.storage_path;
+      const frameCapture = m.kind === "video" && !isLinked
+        ? await extractVideoAnalysisFrame(m as any)
         : null;
 
       const { data, error } = await supabase.functions.invoke("analyze-player-media", {
@@ -157,7 +163,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
           frame_data_url: frameCapture?.dataUrl,
           analysis_source: frameCapture
             ? `cropped video frame at ${frameCapture.frameTime.toFixed(2)}s`
-            : undefined,
+            : isLinked ? "linked video URL" : undefined,
         },
       });
       // Surface the real server error (e.g. "Video too large…", rate limit, credits)
@@ -183,6 +189,28 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       toast.error(e?.message ?? "Analysis failed");
     } finally {
       setAnalyzingId(null);
+    }
+  };
+
+  const onAddByUrl = async (rawUrl: string, notes: string | null) => {
+    if (!user) return;
+    if (!caps.canUploadVideos) {
+      toast.error("Video links require 2nd Line or 1st Line plan");
+      return;
+    }
+    try {
+      const created = await addPlayerMediaByUrl({
+        playerId,
+        viewingId: viewingId ?? null,
+        url: rawUrl,
+        notes,
+      });
+      setItems((prev) => [created, ...prev]);
+      setPendingTagIds((prev) => [created.id, ...prev]);
+      setUrlDialogOpen(false);
+      toast.success("Video link added — add tags below");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not add link");
     }
   };
 
@@ -213,9 +241,22 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
             {title}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {caps.canUploadVideos ? "Photos ≤10 MB · Videos ≤100 MB / 60s" : "Photos ≤10 MB · Upgrade for video"}
+            {caps.canUploadVideos ? "Photos ≤10 MB · Videos ≤100 MB / 60s · or paste a link" : "Photos ≤10 MB · Upgrade for video"}
             {caps.canAiAnalyze ? " · AI analysis enabled" : ""}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {caps.canUploadVideos && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setUrlDialogOpen(true)}
+              className="gap-1.5"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              Paste video URL
+            </Button>
+          )}
         </div>
         <input
           ref={fileRef}
@@ -226,6 +267,12 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
           onChange={(e) => onFiles(e.target.files)}
         />
       </div>
+
+      <PasteVideoUrlDialog
+        open={urlDialogOpen}
+        onOpenChange={setUrlDialogOpen}
+        onSubmit={onAddByUrl}
+      />
 
       {accept && (
         <div
@@ -367,7 +414,7 @@ function PendingTagCard({
 
   useEffect(() => {
     let cancelled = false;
-    getSignedUrl(media.storage_path)
+    getPlayableUrl(media)
       .then((u) => {
         if (!cancelled) setThumbUrl(u);
       })
@@ -375,7 +422,7 @@ function PendingTagCard({
     return () => {
       cancelled = true;
     };
-  }, [media.storage_path]);
+  }, [media.storage_path, media.source_url]);
 
   const toggleTag = (t: string) =>
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -491,11 +538,11 @@ function MediaCard({
 
   useEffect(() => {
     let cancelled = false;
-    getSignedUrl(media.storage_path).then((u) => {
+    getPlayableUrl(media).then((u) => {
       if (!cancelled) setUrl(u);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [media.storage_path]);
+  }, [media.storage_path, media.source_url]);
 
   return (
     <div className="rounded-lg border border-border/50 bg-surface-sunken overflow-hidden flex flex-col">
@@ -625,11 +672,11 @@ function MediaViewerDialog({
       return;
     }
     let cancelled = false;
-    getSignedUrl(media.storage_path).then((u) => {
+    getPlayableUrl(media).then((u) => {
       if (!cancelled) setUrl(u);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [media?.storage_path]);
+  }, [media?.storage_path, media?.source_url]);
 
   const { ratings, text: analysisText } = parseRatings(media?.ai_analysis ?? "");
   const sections = parseAnalysisSections(analysisText);
@@ -859,4 +906,101 @@ function renderWithYouTubeLinks(text: string): React.ReactNode[] {
   }
   if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
   return nodes.length > 0 ? nodes : [text];
+}
+
+function PasteVideoUrlDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onSubmit: (url: string, notes: string | null) => void | Promise<void>;
+}) {
+  const [url, setUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const trimmed = url.trim();
+  const validation = trimmed ? classifyVideoUrl(trimmed) : null;
+  const canSubmit = !!validation?.ok && !submitting;
+
+  const reset = () => {
+    setUrl("");
+    setNotes("");
+    setSubmitting(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(trimmed, notes.trim() || null);
+      reset();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        onOpenChange(o);
+        if (!o) reset();
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Link2 className="w-4 h-4 text-primary" />
+            Paste a video URL
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Video link</label>
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://… (Dropbox, Drive, S3, .mp4, .mov)"
+              autoFocus
+            />
+            {trimmed && validation && !validation.ok && (
+              <p className="text-xs text-destructive">{validation.reason}</p>
+            )}
+            {trimmed && validation?.ok && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                AI will fetch the video directly — no upload needed.
+              </p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Notes (optional)</label>
+            <Textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What should we look at in this clip?"
+              className="text-xs"
+            />
+          </div>
+          <div className="rounded-md bg-surface-sunken border border-border/50 p-2.5 text-[11px] text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">Works:</strong> direct .mp4/.mov links, Dropbox & Google Drive share links, S3, signed URLs.<br />
+            <strong className="text-foreground">Doesn't work yet:</strong> YouTube, Vimeo, Hudl, TikTok, Instagram.
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button variant="hero" onClick={handleSubmit} disabled={!canSubmit}>
+            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+            Add video link
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

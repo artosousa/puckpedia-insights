@@ -25,7 +25,8 @@ export interface PlayerMedia {
   player_id: string;
   viewing_id: string | null;
   kind: MediaKind;
-  storage_path: string;
+  storage_path: string | null;
+  source_url: string | null;
   mime_type: string | null;
   size_bytes: number | null;
   duration_seconds: number | null;
@@ -35,6 +36,62 @@ export interface PlayerMedia {
   ai_analyzed_at: string | null;
   edit: MediaEdit | null;
   created_at: string;
+}
+
+/** YouTube/Vimeo/Hudl etc. — embed-only, AI cannot ingest. */
+const BLOCKED_HOSTS = [
+  "youtube.com", "youtu.be", "m.youtube.com",
+  "vimeo.com", "player.vimeo.com",
+  "hudl.com", "instat.tv", "instatscout.com",
+  "tiktok.com", "instagram.com", "facebook.com", "fb.watch",
+];
+
+export function classifyVideoUrl(rawUrl: string): {
+  ok: boolean;
+  reason?: string;
+  normalized?: string;
+} {
+  let u: URL;
+  try {
+    u = new URL(rawUrl.trim());
+  } catch {
+    return { ok: false, reason: "That doesn't look like a valid URL." };
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") {
+    return { ok: false, reason: "URL must start with http(s)://" };
+  }
+  const host = u.hostname.toLowerCase().replace(/^www\./, "");
+  if (BLOCKED_HOSTS.some((h) => host === h || host.endsWith("." + h))) {
+    return {
+      ok: false,
+      reason: "YouTube, Vimeo, Hudl & social links can't be analyzed by AI yet. Use a direct .mp4/.mov link or a Dropbox/Drive share link.",
+    };
+  }
+
+  // Normalize Google Drive share links → direct download
+  // https://drive.google.com/file/d/<ID>/view → https://drive.google.com/uc?export=download&id=<ID>
+  if (host === "drive.google.com") {
+    const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+    const id = m?.[1] ?? u.searchParams.get("id");
+    if (id) {
+      return { ok: true, normalized: `https://drive.google.com/uc?export=download&id=${id}` };
+    }
+  }
+
+  // Normalize Dropbox share links → direct (?dl=1 forces raw bytes)
+  if (host === "dropbox.com" || host.endsWith(".dropbox.com")) {
+    u.searchParams.set("dl", "1");
+    return { ok: true, normalized: u.toString() };
+  }
+
+  return { ok: true, normalized: u.toString() };
+}
+
+/** Resolve to a renderable URL: signed storage URL or the pasted source_url. */
+export async function getPlayableUrl(media: Pick<PlayerMedia, "storage_path" | "source_url">): Promise<string> {
+  if (media.source_url) return media.source_url;
+  if (media.storage_path) return getSignedUrl(media.storage_path);
+  throw new Error("Media has no source");
 }
 
 export const BUCKET = "player-media";
@@ -244,9 +301,43 @@ export async function uploadPlayerMedia(input: UploadInput): Promise<PlayerMedia
 }
 
 export async function deletePlayerMedia(media: PlayerMedia): Promise<void> {
-  await supabase.storage.from(BUCKET).remove([media.storage_path]);
+  if (media.storage_path) {
+    await supabase.storage.from(BUCKET).remove([media.storage_path]);
+  }
   const { error } = await supabase.from("player_media" as any).delete().eq("id", media.id);
   if (error) throw error;
+}
+
+/** Save a pasted video URL (Dropbox, Drive, S3, direct .mp4, etc.) as a media item. */
+export async function addPlayerMediaByUrl(input: {
+  playerId: string;
+  viewingId: string | null;
+  url: string;
+  tags?: string[];
+  notes?: string | null;
+}): Promise<PlayerMedia> {
+  const cls = classifyVideoUrl(input.url);
+  if (!cls.ok || !cls.normalized) {
+    throw new Error(cls.reason ?? "Invalid video URL");
+  }
+  const { data, error } = await supabase
+    .from("player_media" as any)
+    .insert({
+      player_id: input.playerId,
+      viewing_id: input.viewingId,
+      kind: "video",
+      storage_path: null,
+      source_url: cls.normalized,
+      mime_type: "video/mp4",
+      size_bytes: null,
+      duration_seconds: null,
+      tags: input.tags ?? [],
+      notes: input.notes ?? null,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as unknown as PlayerMedia;
 }
 
 export async function setMediaAnalysis(id: string, analysis: string): Promise<void> {

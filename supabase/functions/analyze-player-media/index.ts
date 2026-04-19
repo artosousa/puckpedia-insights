@@ -133,12 +133,17 @@ Deno.serve(async (req) => {
     const SYSTEM_PROMPT = buildSystemPrompt(level, playerContext);
     const isVideo = media.kind === "video";
     const mime = media.mime_type || (isVideo ? "video/mp4" : "image/jpeg");
+    const isUrlBacked = !media.storage_path && !!media.source_url;
 
     // Build the image_url payload:
+    // - URL-backed videos: pass the source URL directly to Gemini (no worker download)
     // - Photos: small enough → base64 inline (works reliably)
-    // - Videos: analyze a client-captured JPEG frame instead of the raw clip URL
+    // - Uploaded videos: analyze a client-captured JPEG frame
     let imageUrlValue: string;
-    if (isVideo) {
+    if (isUrlBacked) {
+      // Hand the URL straight to the model. Worker memory stays flat.
+      imageUrlValue = media.source_url as string;
+    } else if (isVideo) {
       if (media.size_bytes && media.size_bytes > 100 * 1024 * 1024) {
         return jsonResponse({
           error: "Video too large for AI — trim it shorter or analyze a still frame.",
@@ -175,9 +180,11 @@ Deno.serve(async (req) => {
       playerContext ? `Player background: ${playerContext}` : null,
     ].filter(Boolean).join(" | ");
 
-    const mediaDescriptor = isVideo
-      ? `video frame${analysis_source ? ` (${analysis_source})` : ""}`
-      : media.kind;
+    const mediaDescriptor = isUrlBacked
+      ? "linked video"
+      : isVideo
+        ? `video frame${analysis_source ? ` (${analysis_source})` : ""}`
+        : media.kind;
 
     const userText = `${contextHeader ? contextHeader + "\n" : ""}Tags: ${(media.tags ?? []).join(", ") || "none"}.${
       media.notes ? ` Notes: ${media.notes}` : ""
