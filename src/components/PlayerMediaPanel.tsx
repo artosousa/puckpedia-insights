@@ -241,9 +241,22 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
             {title}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {caps.canUploadVideos ? "Photos ≤10 MB · Videos ≤100 MB / 60s" : "Photos ≤10 MB · Upgrade for video"}
+            {caps.canUploadVideos ? "Photos ≤10 MB · Videos ≤100 MB / 60s · or paste a link" : "Photos ≤10 MB · Upgrade for video"}
             {caps.canAiAnalyze ? " · AI analysis enabled" : ""}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {caps.canUploadVideos && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setUrlDialogOpen(true)}
+              className="gap-1.5"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              Paste video URL
+            </Button>
+          )}
         </div>
         <input
           ref={fileRef}
@@ -254,6 +267,12 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
           onChange={(e) => onFiles(e.target.files)}
         />
       </div>
+
+      <PasteVideoUrlDialog
+        open={urlDialogOpen}
+        onOpenChange={setUrlDialogOpen}
+        onSubmit={onAddByUrl}
+      />
 
       {accept && (
         <div
