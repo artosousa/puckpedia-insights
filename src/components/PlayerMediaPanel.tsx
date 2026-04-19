@@ -146,7 +146,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
 
   const onAnalyze = async (m: PlayerMedia) => {
     if (!caps.canAiAnalyze) {
-      toast.error("AI analysis is available on the McJesus plan");
+      toast.error("AI analysis is available on the 1st Line plan");
       return;
     }
     setAnalyzingId(m.id);
@@ -189,6 +189,28 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
       toast.error(e?.message ?? "Analysis failed");
     } finally {
       setAnalyzingId(null);
+    }
+  };
+
+  const onAddByUrl = async (rawUrl: string, notes: string | null) => {
+    if (!user) return;
+    if (!caps.canUploadVideos) {
+      toast.error("Video links require 2nd Line or 1st Line plan");
+      return;
+    }
+    try {
+      const created = await addPlayerMediaByUrl({
+        playerId,
+        viewingId: viewingId ?? null,
+        url: rawUrl,
+        notes,
+      });
+      setItems((prev) => [created, ...prev]);
+      setPendingTagIds((prev) => [created.id, ...prev]);
+      setUrlDialogOpen(false);
+      toast.success("Video link added — add tags below");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not add link");
     }
   };
 
