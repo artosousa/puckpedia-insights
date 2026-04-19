@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2, Crop } from "lucide-react";
+import { Image as ImageIcon, Video, Trash2, Sparkles, Loader2, Lock, Upload, X, Maximize2, Crop, Link2, ExternalLink } from "lucide-react";
 import { TrackedVideo } from "@/components/TrackedVideo";
 import { VideoEditorDialog } from "@/components/VideoEditorDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { mediaCapabilities, MEDIA_LIMITS, SKILL_TAGS } from "@/lib/tiers";
 import {
+  addPlayerMediaByUrl,
+  classifyVideoUrl,
   deletePlayerMedia,
   extractVideoAnalysisFrame,
+  getPlayableUrl,
   getSignedUrl,
   getVideoDuration,
   listPlayerMedia,
@@ -41,6 +44,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<PlayerMedia | null>(null);
   const [editing, setEditing] = useState<PlayerMedia | null>(null);
+  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   /** IDs of items just uploaded that still need tags. */
   const [pendingTagIds, setPendingTagIds] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -142,13 +146,15 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
 
   const onAnalyze = async (m: PlayerMedia) => {
     if (!caps.canAiAnalyze) {
-      toast.error("AI analysis is available on the 1st Line plan");
+      toast.error("AI analysis is available on the McJesus plan");
       return;
     }
     setAnalyzingId(m.id);
     try {
-      const frameCapture = m.kind === "video"
-        ? await extractVideoAnalysisFrame(m)
+      // Linked videos (source_url) are sent straight to the model — no client frame needed.
+      const isLinked = !!m.source_url && !m.storage_path;
+      const frameCapture = m.kind === "video" && !isLinked
+        ? await extractVideoAnalysisFrame(m as any)
         : null;
 
       const { data, error } = await supabase.functions.invoke("analyze-player-media", {
@@ -157,7 +163,7 @@ export function PlayerMediaPanel({ playerId, viewingId = null, scope = "all", ti
           frame_data_url: frameCapture?.dataUrl,
           analysis_source: frameCapture
             ? `cropped video frame at ${frameCapture.frameTime.toFixed(2)}s`
-            : undefined,
+            : isLinked ? "linked video URL" : undefined,
         },
       });
       // Surface the real server error (e.g. "Video too large…", rate limit, credits)

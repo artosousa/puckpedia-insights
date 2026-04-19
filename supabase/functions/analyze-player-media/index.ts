@@ -180,9 +180,11 @@ Deno.serve(async (req) => {
       playerContext ? `Player background: ${playerContext}` : null,
     ].filter(Boolean).join(" | ");
 
-    const mediaDescriptor = isVideo
-      ? `video frame${analysis_source ? ` (${analysis_source})` : ""}`
-      : media.kind;
+    const mediaDescriptor = isUrlBacked
+      ? "linked video"
+      : isVideo
+        ? `video frame${analysis_source ? ` (${analysis_source})` : ""}`
+        : media.kind;
 
     const userText = `${contextHeader ? contextHeader + "\n" : ""}Tags: ${(media.tags ?? []).join(", ") || "none"}.${
       media.notes ? ` Notes: ${media.notes}` : ""
