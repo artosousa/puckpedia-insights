@@ -907,3 +907,100 @@ function renderWithYouTubeLinks(text: string): React.ReactNode[] {
   if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
   return nodes.length > 0 ? nodes : [text];
 }
+
+function PasteVideoUrlDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onSubmit: (url: string, notes: string | null) => void | Promise<void>;
+}) {
+  const [url, setUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const trimmed = url.trim();
+  const validation = trimmed ? classifyVideoUrl(trimmed) : null;
+  const canSubmit = !!validation?.ok && !submitting;
+
+  const reset = () => {
+    setUrl("");
+    setNotes("");
+    setSubmitting(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(trimmed, notes.trim() || null);
+      reset();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        onOpenChange(o);
+        if (!o) reset();
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Link2 className="w-4 h-4 text-primary" />
+            Paste a video URL
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Video link</label>
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://… (Dropbox, Drive, S3, .mp4, .mov)"
+              autoFocus
+            />
+            {trimmed && validation && !validation.ok && (
+              <p className="text-xs text-destructive">{validation.reason}</p>
+            )}
+            {trimmed && validation?.ok && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                AI will fetch the video directly — no upload needed.
+              </p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Notes (optional)</label>
+            <Textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What should we look at in this clip?"
+              className="text-xs"
+            />
+          </div>
+          <div className="rounded-md bg-surface-sunken border border-border/50 p-2.5 text-[11px] text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">Works:</strong> direct .mp4/.mov links, Dropbox & Google Drive share links, S3, signed URLs.<br />
+            <strong className="text-foreground">Doesn't work yet:</strong> YouTube, Vimeo, Hudl, TikTok, Instagram.
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button variant="hero" onClick={handleSubmit} disabled={!canSubmit}>
+            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+            Add video link
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
