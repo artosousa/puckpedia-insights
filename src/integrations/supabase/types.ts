@@ -84,7 +84,8 @@ export type Database = {
           notes: string | null
           player_id: string
           size_bytes: number | null
-          storage_path: string
+          source_url: string | null
+          storage_path: string | null
           tags: string[]
           updated_at: string
           user_id: string
@@ -102,7 +103,8 @@ export type Database = {
           notes?: string | null
           player_id: string
           size_bytes?: number | null
-          storage_path: string
+          source_url?: string | null
+          storage_path?: string | null
           tags?: string[]
           updated_at?: string
           user_id?: string
@@ -120,7 +122,8 @@ export type Database = {
           notes?: string | null
           player_id?: string
           size_bytes?: number | null
-          storage_path?: string
+          source_url?: string | null
+          storage_path?: string | null
           tags?: string[]
           updated_at?: string
           user_id?: string
