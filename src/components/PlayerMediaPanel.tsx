@@ -414,7 +414,7 @@ function PendingTagCard({
 
   useEffect(() => {
     let cancelled = false;
-    getSignedUrl(media.storage_path)
+    getPlayableUrl(media)
       .then((u) => {
         if (!cancelled) setThumbUrl(u);
       })
@@ -422,7 +422,7 @@ function PendingTagCard({
     return () => {
       cancelled = true;
     };
-  }, [media.storage_path]);
+  }, [media.storage_path, media.source_url]);
 
   const toggleTag = (t: string) =>
     setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -538,11 +538,11 @@ function MediaCard({
 
   useEffect(() => {
     let cancelled = false;
-    getSignedUrl(media.storage_path).then((u) => {
+    getPlayableUrl(media).then((u) => {
       if (!cancelled) setUrl(u);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [media.storage_path]);
+  }, [media.storage_path, media.source_url]);
 
   return (
     <div className="rounded-lg border border-border/50 bg-surface-sunken overflow-hidden flex flex-col">
@@ -672,11 +672,11 @@ function MediaViewerDialog({
       return;
     }
     let cancelled = false;
-    getSignedUrl(media.storage_path).then((u) => {
+    getPlayableUrl(media).then((u) => {
       if (!cancelled) setUrl(u);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [media?.storage_path]);
+  }, [media?.storage_path, media?.source_url]);
 
   const { ratings, text: analysisText } = parseRatings(media?.ai_analysis ?? "");
   const sections = parseAnalysisSections(analysisText);
