@@ -36,12 +36,18 @@ const BrandingContext = createContext<BrandingContextValue | undefined>(undefine
 
 function applyBrandColors(primary: string, secondary: string) {
   const root = document.documentElement;
+  const foregroundFor = (color: string) => {
+    const lightness = Number.parseFloat(color.split(" ")[2]);
+    return lightness > 62 ? "220 24% 10%" : "0 0% 100%";
+  };
   root.style.setProperty("--primary", primary);
+  root.style.setProperty("--primary-foreground", foregroundFor(primary));
   root.style.setProperty("--ring", primary);
   root.style.setProperty("--sidebar-primary", primary);
   root.style.setProperty("--sidebar-ring", primary);
   root.style.setProperty("--ember", primary);
   root.style.setProperty("--accent", secondary);
+  root.style.setProperty("--accent-foreground", foregroundFor(secondary));
 }
 
 function cacheBranding(branding: TeamBranding) {

@@ -58,11 +58,11 @@ export function TeamBrandingEditor() {
           </div>
           {canManage && (
             <div className="flex gap-1 mt-2">
-              <Button variant="outline" size="icon" className="size-9 relative" title="Upload team logo" disabled={saving}>
+              <Button variant="outline" size="icon" className="size-9 relative" title={branding.logoPath ? "Replace team logo" : "Upload team logo"} disabled={saving}>
                 <ImagePlus className="size-4" />
                 <input aria-label="Upload team logo" type="file" accept="image/png,image/jpeg,image/webp" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(event) => upload(event.target.files?.[0])} />
               </Button>
-              {branding.logoPath && <Button variant="outline" size="icon" className="size-9" title="Remove team logo" disabled={saving} onClick={() => removeLogo().catch(() => toast.error("Could not remove logo."))}><Trash2 /></Button>}
+              {branding.logoPath && <Button variant="outline" size="icon" className="size-9" title="Remove team logo" disabled={saving} onClick={async () => { try { await removeLogo(); toast.success("Team logo removed."); } catch { toast.error("Could not remove logo."); } }}><Trash2 /></Button>}
             </div>
           )}
         </div>

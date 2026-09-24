@@ -12,15 +12,12 @@ import {
 import { toast } from "sonner";
 
 const ORDER: ThemeKey[] = [
-  "primary",
-  "accent",
   "background",
   "foreground",
   "card",
   "surface_elevated",
   "surface_sunken",
   "border",
-  "primary_foreground",
 ];
 
 export function ThemeEditor() {

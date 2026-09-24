@@ -64,6 +64,7 @@ const CSS_VAR_MAP: Record<ThemeKey, string[]> = {
 export function applyTheme(theme: Partial<Record<ThemeKey, string>>) {
   const root = document.documentElement;
   (Object.keys(DEFAULT_THEME) as ThemeKey[]).forEach((key) => {
+    if (key === "primary" || key === "accent" || key === "primary_foreground") return;
     const value = theme[key] ?? DEFAULT_THEME[key];
     CSS_VAR_MAP[key].forEach((cssVar) => {
       root.style.setProperty(cssVar, value);
