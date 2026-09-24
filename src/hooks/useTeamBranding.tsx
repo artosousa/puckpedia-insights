@@ -94,7 +94,7 @@ export function TeamBrandingProvider({ children }: { children: React.ReactNode }
     ]);
     let logoUrl: string | null = null;
     if (brand?.logo_path) {
-      const { data } = await supabase.storage.from("team-branding").createSignedUrl(brand.logo_path, 3600);
+      const { data } = await supabase.storage.from("team-branding").createSignedUrl(brand.logo_path, 604800);
       logoUrl = data?.signedUrl ?? null;
     }
     const next: TeamBranding = {
