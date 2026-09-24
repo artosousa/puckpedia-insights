@@ -10,6 +10,19 @@ export type ThemeKey =
   | "surface_elevated"
   | "surface_sunken";
 
+export type AppearanceMode = "light" | "dark" | "system";
+
+export function resolveAppearanceMode(mode: AppearanceMode): "light" | "dark" {
+  if (mode !== "system") return mode;
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+export function applyAppearanceMode(mode: AppearanceMode) {
+  const resolved = resolveAppearanceMode(mode);
+  document.documentElement.classList.toggle("light", resolved === "light");
+  document.documentElement.classList.toggle("dark", resolved === "dark");
+}
+
 export const DEFAULT_THEME: Record<ThemeKey, string> = {
   background: "0 0% 7%",
   foreground: "0 0% 95%",
@@ -51,6 +64,7 @@ const CSS_VAR_MAP: Record<ThemeKey, string[]> = {
 export function applyTheme(theme: Partial<Record<ThemeKey, string>>) {
   const root = document.documentElement;
   (Object.keys(DEFAULT_THEME) as ThemeKey[]).forEach((key) => {
+    if (key === "primary" || key === "accent" || key === "primary_foreground") return;
     const value = theme[key] ?? DEFAULT_THEME[key];
     CSS_VAR_MAP[key].forEach((cssVar) => {
       root.style.setProperty(cssVar, value);

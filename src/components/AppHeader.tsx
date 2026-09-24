@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  ClipboardCheck, Search, Users, Plus, LayoutDashboard, Sparkles,
+  Search, Users, Plus, LayoutDashboard,
   LogOut, Menu, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useScoutingData } from "@/hooks/useScoutingData";
+import { useTeamBranding } from "@/hooks/useTeamBranding";
+import { TeamLogo } from "@/components/TeamLogo";
 
 type Props = {
   /** Search box value (controlled). If omitted, search box is hidden. */
@@ -44,6 +46,7 @@ export const AppHeader = ({
   const { signOut, user } = useAuth();
   const { tier } = useSubscription();
   const { players, leagues } = useScoutingData();
+  const { branding } = useTeamBranding();
 
   const atLimit = players.length >= tier.playerLimit;
   const tryAddPlayer = () => {
@@ -72,8 +75,8 @@ export const AppHeader = ({
       {/* Top bar */}
       <div className="container flex items-center justify-between gap-2 h-14 px-4 sm:px-6">
         <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-          <ClipboardCheck className="w-5 h-5 text-primary shrink-0" />
-          <span className="font-heading text-base font-bold truncate">BarnNotes</span>
+          <TeamLogo />
+          <span className="font-heading text-base font-bold truncate">{branding?.name ?? "BarnNotes"}</span>
           {crumb && (
             <span className="hidden sm:inline text-muted-foreground text-sm truncate">/ {crumb}</span>
           )}
@@ -101,8 +104,8 @@ export const AppHeader = ({
             <SheetContent side="right" className="w-[85vw] max-w-sm p-0 flex flex-col">
               <SheetHeader className="px-5 py-4 border-b border-border/50">
                 <SheetTitle className="text-left flex items-center gap-2">
-                  <ClipboardCheck className="w-5 h-5 text-primary" />
-                  BarnNotes
+                   <TeamLogo />
+                   {branding?.name ?? "BarnNotes"}
                 </SheetTitle>
               </SheetHeader>
               <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1">

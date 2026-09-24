@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
+import { getCachedTeamBranding } from "@/hooks/useTeamBranding";
 
 const credSchema = z.object({
   email: z.string().trim().email({ message: "Enter a valid email" }).max(255),
@@ -23,6 +24,13 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const cachedBranding = getCachedTeamBranding();
+
+  useEffect(() => {
+    if (!cachedBranding) return;
+    document.documentElement.style.setProperty("--primary", cachedBranding.primaryColor);
+    document.documentElement.style.setProperty("--accent", cachedBranding.secondaryColor);
+  }, [cachedBranding]);
 
   useEffect(() => {
     if (!authLoading && user) navigate("/dashboard", { replace: true });
@@ -100,8 +108,8 @@ const Auth = () => {
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center gap-2 mb-3">
-              <ClipboardCheck className="w-6 h-6 text-primary" />
-              <span className="font-heading text-xl font-bold">BarnNotes</span>
+              {cachedBranding?.logoUrl ? <img src={cachedBranding.logoUrl} alt="" className="size-8 rounded object-contain" /> : <ClipboardCheck className="w-6 h-6 text-primary" />}
+              <span className="font-heading text-xl font-bold">{cachedBranding?.name ?? "BarnNotes"}</span>
             </div>
             <h1 className="font-heading text-2xl font-bold">Welcome, scout</h1>
             <p className="text-sm text-muted-foreground mt-1">Your notebook is waiting.</p>

@@ -26,7 +26,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { AiRatingSuggestions } from "@/components/AiRatingSuggestions";
 import { computeScoutConfidence } from "@/lib/scoutConfidence";
 
-const COLORS = ["hsl(16, 78%, 57%)", "hsl(38, 80%, 60%)", "hsl(200, 60%, 55%)", "hsl(140, 50%, 50%)", "hsl(280, 50%, 60%)"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--muted-foreground))", "hsl(var(--foreground))", "hsl(var(--border))"];
 
 const avg = (nums: (number | null)[]) => {
   const v = nums.filter((n): n is number => n != null);
@@ -348,6 +348,7 @@ const PlayerProfile = () => {
               <ExportMenu
                 filename={`barnnotes-${player.last_name.toLowerCase()}`}
                 sheets={exportSheets}
+                printableTitle={`${player.first_name} ${player.last_name} — Scouting Report`}
               />
               <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
                 <Plus className="w-4 h-4" />
@@ -455,7 +456,7 @@ const PlayerProfile = () => {
                     <PolarGrid stroke="hsl(var(--border))" />
                     <PolarAngleAxis dataKey="attr" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                     <PolarRadiusAxis domain={[0, 10]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                    <Radar dataKey="value" stroke="hsl(16, 78%, 57%)" fill="hsl(16, 78%, 57%)" fillOpacity={0.4} />
+                    <Radar dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.4} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
@@ -472,9 +473,9 @@ const PlayerProfile = () => {
                     <YAxis domain={[0, 10]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                     <Tooltip contentStyle={{ background: "hsl(var(--surface-elevated))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line type="monotone" dataKey="overall" stroke="hsl(16, 78%, 57%)" strokeWidth={2} />
-                    <Line type="monotone" dataKey="skating" stroke="hsl(38, 80%, 60%)" strokeWidth={2} />
-                    <Line type="monotone" dataKey="shot" stroke="hsl(200, 60%, 55%)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="overall" stroke="hsl(var(--primary))" strokeWidth={2} />
+                    <Line type="monotone" dataKey="skating" stroke="hsl(var(--accent))" strokeWidth={2} />
+                    <Line type="monotone" dataKey="shot" stroke="hsl(var(--muted-foreground))" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

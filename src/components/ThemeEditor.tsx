@@ -1,4 +1,4 @@
-import { Loader2, RotateCcw, Save } from "lucide-react";
+import { Laptop, Loader2, Moon, RotateCcw, Save, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/hooks/useTheme";
@@ -12,19 +12,16 @@ import {
 import { toast } from "sonner";
 
 const ORDER: ThemeKey[] = [
-  "primary",
-  "accent",
   "background",
   "foreground",
   "card",
   "surface_elevated",
   "surface_sunken",
   "border",
-  "primary_foreground",
 ];
 
 export function ThemeEditor() {
-  const { theme, loading, saving, setColor, save, reset } = useTheme();
+  const { theme, loading, saving, appearanceMode, setAppearanceMode, setColor, save, reset } = useTheme();
 
   const onSave = async () => {
     try {
@@ -45,12 +42,12 @@ export function ThemeEditor() {
   };
 
   return (
-    <section className="glass-card rounded-2xl p-6 mb-6">
+    <section className="glass-card rounded-xl p-6 mb-6">
       <div className="flex items-start justify-between mb-1 gap-4">
         <div>
-          <h2 className="font-heading text-base font-semibold">Appearance</h2>
+          <h2 className="font-heading text-base font-semibold">My appearance</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Customize your color palette. Changes preview instantly — save to keep them across devices.
+            Choose your display mode and personal palette. Changes preview instantly.
           </p>
         </div>
       </div>
@@ -61,6 +58,17 @@ export function ThemeEditor() {
         </div>
       ) : (
         <>
+          <div className="grid grid-cols-3 gap-2 mt-5" role="group" aria-label="Appearance mode">
+            {([
+              { mode: "light" as const, label: "Light", icon: Sun },
+              { mode: "dark" as const, label: "Dark", icon: Moon },
+              { mode: "system" as const, label: "System", icon: Laptop },
+            ]).map(({ mode, label, icon: Icon }) => (
+              <Button key={mode} variant={appearanceMode === mode ? "default" : "outline"} size="sm" onClick={() => setAppearanceMode(mode)}>
+                <Icon className="size-4" />{label}
+              </Button>
+            ))}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
             {ORDER.map((key) => {
               const hsl = theme[key] ?? DEFAULT_THEME[key];
