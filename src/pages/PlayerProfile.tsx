@@ -348,6 +348,7 @@ const PlayerProfile = () => {
               <ExportMenu
                 filename={`barnnotes-${player.last_name.toLowerCase()}`}
                 sheets={exportSheets}
+                printableTitle={`${player.first_name} ${player.last_name} — Scouting Report`}
               />
               <Button variant="hero" size="sm" onClick={() => setViewingOpen(true)}>
                 <Plus className="w-4 h-4" />

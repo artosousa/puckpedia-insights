@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { applyTheme, DB_COLUMN_BY_KEY, DEFAULT_THEME, resetTheme, type ThemeKey } from "@/lib/theme";
+import { applyAppearanceMode, applyTheme, DB_COLUMN_BY_KEY, DEFAULT_THEME, resetTheme, type AppearanceMode, type ThemeKey } from "@/lib/theme";
 
 type ThemeValues = Partial<Record<ThemeKey, string>>;
 
@@ -9,6 +9,8 @@ interface ThemeContextValue {
   theme: ThemeValues;
   loading: boolean;
   saving: boolean;
+  appearanceMode: AppearanceMode;
+  setAppearanceMode: (mode: AppearanceMode) => void;
   setColor: (key: ThemeKey, hslValue: string) => void;
   save: () => Promise<void>;
   reset: () => Promise<void>;
@@ -39,6 +41,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<ThemeValues>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [appearanceMode, setAppearanceModeState] = useState<AppearanceMode>("dark");
 
   // Load
   useEffect(() => {
@@ -46,6 +49,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!user) {
       resetTheme();
       setTheme({});
+      setAppearanceModeState("dark");
+      applyAppearanceMode("dark");
       setLoading(false);
       return;
     }
@@ -57,13 +62,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      const t = rowToTheme(data as any);
+      const row = data as (Record<string, string | null> & { appearance_mode?: string }) | null;
+      const t = rowToTheme(row);
+      const storedMode = row?.appearance_mode;
+      const mode: AppearanceMode = storedMode === "light" || storedMode === "system" || storedMode === "dark"
+        ? storedMode
+        : (t.background && Number.parseFloat(t.background.split(" ")[2]) > 50 ? "light" : "dark");
       setTheme(t);
+      setAppearanceModeState(mode);
+      applyAppearanceMode(mode);
       applyTheme(t);
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [user]);
+
+  useEffect(() => {
+    if (appearanceMode !== "system") return;
+    const media = window.matchMedia("(prefers-color-scheme: light)");
+    const update = () => applyAppearanceMode("system");
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [appearanceMode]);
+
+  const setAppearanceMode = useCallback((mode: AppearanceMode) => {
+    setAppearanceModeState(mode);
+    applyAppearanceMode(mode);
+  }, []);
 
   const setColor = useCallback((key: ThemeKey, hslValue: string) => {
     setTheme((prev) => {
@@ -78,21 +103,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setSaving(true);
     try {
       const row = themeToRow(theme, user.id);
+      row.appearance_mode = appearanceMode;
       await supabase.from("user_theme_prefs" as any).upsert(row, { onConflict: "user_id" });
     } finally {
       setSaving(false);
     }
-  }, [theme, user]);
+  }, [theme, user, appearanceMode]);
 
   const reset = useCallback(async () => {
     setTheme({});
     applyTheme({});
+    setAppearanceModeState("dark");
+    applyAppearanceMode("dark");
     if (user) {
       await supabase.from("user_theme_prefs" as any).delete().eq("user_id", user.id);
     }
   }, [user]);
 
-  const value = useMemo(() => ({ theme, loading, saving, setColor, save, reset }), [theme, loading, saving, setColor, save, reset]);
+  const value = useMemo(() => ({ theme, loading, saving, appearanceMode, setAppearanceMode, setColor, save, reset }), [theme, loading, saving, appearanceMode, setAppearanceMode, setColor, save, reset]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

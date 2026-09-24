@@ -10,6 +10,7 @@ import { openBillingPortal } from "@/lib/stripe";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { AppHeader } from "@/components/AppHeader";
 import { ThemeEditor } from "@/components/ThemeEditor";
+import { TeamBrandingEditor } from "@/components/TeamBrandingEditor";
 import { toast } from "sonner";
 
 const Account = () => {
@@ -158,6 +159,7 @@ const Account = () => {
 
         {/* Appearance / theme */}
         <ThemeEditor />
+        <TeamBrandingEditor />
       </main>
     </div>
   );

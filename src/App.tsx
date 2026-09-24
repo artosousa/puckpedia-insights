@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound.tsx";
 import { ScoutingDataProvider } from "./hooks/useScoutingData";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
+import { TeamBrandingProvider } from "./hooks/useTeamBranding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -27,7 +28,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ThemeProvider>
-            <ScoutingDataProvider>
+            <TeamBrandingProvider>
+              <ScoutingDataProvider>
               <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -68,7 +70,8 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            </ScoutingDataProvider>
+              </ScoutingDataProvider>
+            </TeamBrandingProvider>
           </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>
