@@ -5,6 +5,6 @@
 - [x] Add account branding controls and member invitations
 - [x] Brand signed-in header and known-team login
 - [x] Add branded printable report and Excel metadata
-- [ ] Verify permissions, upload flow, themes, exports, and responsive layouts
+- [x] Verify permissions, upload flow, themes, exports, and responsive layouts
 
 - [x] Compare BarnNotes with RinkNet scouting and explain product differences
