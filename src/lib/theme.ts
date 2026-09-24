@@ -10,6 +10,19 @@ export type ThemeKey =
   | "surface_elevated"
   | "surface_sunken";
 
+export type AppearanceMode = "light" | "dark" | "system";
+
+export function resolveAppearanceMode(mode: AppearanceMode): "light" | "dark" {
+  if (mode !== "system") return mode;
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+export function applyAppearanceMode(mode: AppearanceMode) {
+  const resolved = resolveAppearanceMode(mode);
+  document.documentElement.classList.toggle("light", resolved === "light");
+  document.documentElement.classList.toggle("dark", resolved === "dark");
+}
+
 export const DEFAULT_THEME: Record<ThemeKey, string> = {
   background: "0 0% 7%",
   foreground: "0 0% 95%",
