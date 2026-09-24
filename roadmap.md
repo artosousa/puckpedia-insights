@@ -6,3 +6,5 @@
 - [x] Brand signed-in header and known-team login
 - [x] Add branded printable report and Excel metadata
 - [ ] Verify permissions, upload flow, themes, exports, and responsive layouts
+
+- [ ] Compare BarnNotes with RinkNet scouting and explain product differences
