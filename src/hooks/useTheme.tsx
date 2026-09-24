@@ -62,7 +62,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      const row = data as (Record<string, string | null> & { appearance_mode?: string }) | null;
+      const row = data as unknown as (Record<string, string | null> & { appearance_mode?: string }) | null;
       const t = rowToTheme(row);
       const storedMode = row?.appearance_mode;
       const mode: AppearanceMode = storedMode === "light" || storedMode === "system" || storedMode === "dark"
